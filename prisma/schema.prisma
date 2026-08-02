@@ -1,0 +1,202 @@
+// Prisma schema for Polloye (Kahoot-style live quiz platform)
+// Auth models follow Better Auth's required shape.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Better Auth ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions     Session[]
+  accounts     Account[]
+  quizzes      Quiz[]
+  participants Participant[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum QuizSessionState {
+  ACTIVE
+  FINISHED
+  INACTIVE
+}
+
+enum QuestionType {
+  MCQ
+  MSQ
+  TRUE_FALSE
+}
+
+enum AnalyticsType {
+  BARCHART
+  PIE_CHART
+  DONUT_CHART
+}
+
+enum OptionNature {
+  CORRECT
+  WRONG
+}
+
+// ─── Domain ──────────────────────────────────────────────────────────────────
+
+model Quiz {
+  id              String   @id @default(uuid())
+  userId          String
+  name            String
+  description     String?
+  quizSharingCode String   @unique // 6-char alphanumeric, assigned by app logic
+  createdAt       DateTime @default(now())
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions QuizSession[]
+  questions Question[]
+
+  @@index([userId])
+  @@map("quiz")
+}
+
+model QuizSession {
+  id          String           @id @default(uuid())
+  quizId      String
+  state       QuizSessionState @default(INACTIVE)
+  conductedAt DateTime         @default(now())
+  sessionCode String           @unique // 6-char alphanumeric, join + view results
+
+  quiz         Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  participants Participant[]
+
+  @@index([quizId])
+  @@map("quiz_session")
+}
+
+model Question {
+  id                  String        @id @default(uuid())
+  quizId              String
+  questionDescription String
+  quesImgLink         String?
+  questionType        QuestionType
+  analyticsType       AnalyticsType @default(BARCHART)
+  score               Int           @default(1000)
+  duration            Int // milliseconds
+  position            Int // display / flow order within the quiz
+
+  quiz      Quiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options   Option[]
+  responses Response[]
+
+  @@unique([quizId, position])
+  @@index([quizId])
+  @@map("question")
+}
+
+model Option {
+  id                String       @id @default(uuid())
+  questionId        String
+  optionDescription String
+  optImgLink        String?
+  optionNature      OptionNature
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("option")
+}
+
+model Participant {
+  id              String  @id @default(uuid())
+  userId          String? // null when guest joins with nickname only
+  participantName String
+  sessionId       String
+  totalScore      Int     @default(0)
+
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  session   QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  responses Response[]
+
+  @@index([sessionId])
+  @@index([userId])
+  @@map("participant")
+}
+
+model Response {
+  id            String   @id @default(uuid())
+  optionIds     String[] // selected option UUIDs (Postgres text[]); app validates FKs
+  questionId    String
+  participantId String
+  timestamp     DateTime @default(now())
+  pointEarned   Int?
+
+  question    Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([participantId, questionId])
+  @@index([questionId])
+  @@index([participantId])
+  @@map("response")
+}
