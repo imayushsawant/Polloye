@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:ws": "npm run dev --prefix ws-server",
+    "dev:all": "npm run dev:ws & npm run dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -18,10 +20,12 @@
     "@prisma/client": "^7.9.1",
     "better-auth": "^1.6.25",
     "dotenv": "^17.4.2",
+    "jose": "^6.2.8",
     "next": "16.2.12",
     "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "socket.io-client": "^4.8.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {

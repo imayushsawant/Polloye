@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
 type QuestionType = "MCQ" | "MSQ" | "TRUE_FALSE";
@@ -130,6 +131,7 @@ async function readJson(res: Response) {
 }
 
 export default function CreateQuizTestPage() {
+  const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
 
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
@@ -466,6 +468,28 @@ export default function CreateQuizTestPage() {
     }
   }
 
+  async function handleStartLiveSession() {
+    if (!activeQuiz) return;
+    setError("");
+    try {
+      // Ensure dirty cards are saved first
+      const dirty = cards.filter((c) => c.dirty && !c.saving);
+      for (const card of dirty) {
+        await saveCard(card.localId);
+      }
+
+      const data = await readJson(
+        await fetch(`/api/quiz/${activeQuiz.id}/session`, { method: "POST" }),
+      );
+      setStatus(`Live session ${data.session.sessionCode}`);
+      router.push(`/quiz/${data.session.sessionCode}/host`);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to start live session",
+      );
+    }
+  }
+
   if (isPending) {
     return <main style={pageStyle}>Loading session…</main>;
   }
@@ -591,7 +615,7 @@ export default function CreateQuizTestPage() {
               rows={2}
             />
           </label>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="submit">
               {activeQuiz ? "Update quiz" : "Create quiz"}
             </button>
@@ -600,12 +624,21 @@ export default function CreateQuizTestPage() {
                 Delete quiz
               </button>
             )}
+            {activeQuiz && (
+              <button type="button" onClick={handleStartLiveSession}>
+                Start live session
+              </button>
+            )}
           </div>
         </form>
         {activeQuiz && (
           <p>
             Active: <code>{activeQuiz.id}</code> · code{" "}
             <code>{activeQuiz.quizSharingCode}</code>
+            {" · "}
+            <a href={`/share-quiz/${activeQuiz.quizSharingCode}`}>
+              Share template
+            </a>
           </p>
         )}
       </section>
