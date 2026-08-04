@@ -4,6 +4,7 @@ import { signHostToken } from "@/lib/ws-jwt";
 
 type RouteContext = { params: Promise<{ sessionCode: string }> };
 
+/** Mint host JWT while in the waiting-room host view (`/join-quiz/:code/host`). */
 export async function POST(request: Request, context: RouteContext) {
   const authResult = await requireSession(request);
   if (authResult.error) return authResult.error;

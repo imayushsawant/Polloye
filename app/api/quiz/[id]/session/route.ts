@@ -6,11 +6,13 @@ import {
 } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 import { generateUniqueSessionCode } from "@/lib/session-codes";
-import { bootstrapWsSession } from "@/lib/ws-bootstrap";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-/** Host opens a live lobby: creates QuizSession (INACTIVE), loads quiz into WS memory. */
+/**
+ * Open a waiting-room lobby only.
+ * Does NOT load the quiz into WS memory — that happens on Begin quiz.
+ */
 export async function POST(request: Request, context: RouteContext) {
   const authResult = await requireSession(request);
   if (authResult.error) return authResult.error;
@@ -21,16 +23,11 @@ export async function POST(request: Request, context: RouteContext) {
 
   const quiz = await prisma.quiz.findUnique({
     where: { id: quizId },
-    include: {
-      questions: {
-        orderBy: { position: "asc" },
-        include: { options: true },
-      },
-    },
+    include: { _count: { select: { questions: true } } },
   });
 
   if (!quiz) return jsonError("Quiz not found", 404);
-  if (quiz.questions.length === 0) {
+  if (quiz._count.questions === 0) {
     return jsonError("Quiz has no questions", 400);
   }
 
@@ -43,37 +40,6 @@ export async function POST(request: Request, context: RouteContext) {
       state: "INACTIVE",
     },
   });
-
-  try {
-    await bootstrapWsSession({
-      sessionId: session.id,
-      sessionCode: session.sessionCode,
-      quizId: quiz.id,
-      hostUserId: authResult.userId,
-      questions: quiz.questions.map((q) => ({
-        id: q.id,
-        questionDescription: q.questionDescription,
-        quesImgLink: q.quesImgLink,
-        questionType: q.questionType,
-        analyticsType: q.analyticsType,
-        score: q.score,
-        duration: q.duration,
-        position: q.position,
-        options: q.options.map((o) => ({
-          id: o.id,
-          optionDescription: o.optionDescription,
-          optImgLink: o.optImgLink,
-          optionNature: o.optionNature,
-        })),
-      })),
-    });
-  } catch (err) {
-    await prisma.quizSession.delete({ where: { id: session.id } });
-    return jsonError(
-      err instanceof Error ? err.message : "Failed to bootstrap live session",
-      502,
-    );
-  }
 
   return jsonOk({ session }, 201);
 }

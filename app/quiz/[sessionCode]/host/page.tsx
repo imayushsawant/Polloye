@@ -12,7 +12,12 @@ import type { Socket } from "socket.io-client";
 import { authClient } from "@/lib/auth-client";
 import { connectWs } from "@/lib/ws-client";
 
-export default function HostQuizPage({
+function hostTokenStorageKey(sessionCode: string) {
+  return `polloye:host:${sessionCode.toUpperCase()}`;
+}
+
+/** Live host controls after Begin — quiz is already in WS memory. */
+export default function LiveHostPage({
   params,
 }: {
   params: Promise<{ sessionCode: string }>;
@@ -55,17 +60,34 @@ export default function HostQuizPage({
 
     async function boot() {
       try {
-        const res = await fetch(`/api/session/${sessionCode}/host-token`, {
-          method: "POST",
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error ?? "Failed to mint host token");
+        // Ensure lobby was begun (quiz in WS memory)
+        const statusRes = await fetch(`/api/session/${sessionCode}`);
+        const statusData = await statusRes.json();
+        if (!statusRes.ok) {
+          setError(statusData.error ?? "Session not found");
           return;
         }
-        if (!active) return;
+        if (statusData.session.state === "INACTIVE") {
+          router.replace(`/join-quiz/${sessionCode}/host`);
+          return;
+        }
 
-        s = connectWs(data.token);
+        let token = sessionStorage.getItem(hostTokenStorageKey(sessionCode));
+        if (!token) {
+          const res = await fetch(`/api/join-quiz/${sessionCode}/host-token`, {
+            method: "POST",
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            setError(data.error ?? "Failed to mint host token");
+            return;
+          }
+          token = data.token as string;
+          sessionStorage.setItem(hostTokenStorageKey(sessionCode), token);
+        }
+        if (!active || !token) return;
+
+        s = connectWs(token);
         setSocket(s);
 
         s.on("connect_error", (err) => setError(err.message));
@@ -77,7 +99,11 @@ export default function HostQuizPage({
           (state: {
             phase: string;
             participant_count: number;
-            current_question: { question_id: string; question_desc: string; duration: number } | null;
+            current_question: {
+              question_id: string;
+              question_desc: string;
+              duration: number;
+            } | null;
           }) => {
             setPhase(state.phase);
             setParticipantCount(state.participant_count);
@@ -89,7 +115,11 @@ export default function HostQuizPage({
         );
         s.on(
           "question:reveal",
-          (q: { question_id: string; question_desc: string; duration: number }) => {
+          (q: {
+            question_id: string;
+            question_desc: string;
+            duration: number;
+          }) => {
             setPhase("question_active");
             setQuestion(q);
             setOptionCount(null);
@@ -145,12 +175,12 @@ export default function HostQuizPage({
 
   return (
     <main style={page}>
-      <h1>Host · {sessionCode}</h1>
+      <h1>Live host · {sessionCode}</h1>
       <p>
         Phase: {phase} · Players: {participantCount}
       </p>
       <p>
-        Join link: <Link href={joinUrl}>{joinUrl || "…"}</Link>
+        Lobby link: <Link href={joinUrl}>{joinUrl || "…"}</Link>
       </p>
       {error && <p style={{ color: "crimson" }}>{error}</p>}
 
@@ -159,7 +189,9 @@ export default function HostQuizPage({
           <h2>{question.question_desc}</h2>
           <p>Duration {question.duration}ms</p>
           {optionCount && (
-            <pre style={{ margin: 0 }}>{JSON.stringify(optionCount, null, 2)}</pre>
+            <pre style={{ margin: 0 }}>
+              {JSON.stringify(optionCount, null, 2)}
+            </pre>
           )}
         </section>
       )}
@@ -170,7 +202,7 @@ export default function HostQuizPage({
           disabled={!socket || phase === "question_active"}
           onClick={() => socket?.emit("host:showQuestion")}
         >
-          Show question / Next
+          Show question
         </button>
         <button
           type="button"

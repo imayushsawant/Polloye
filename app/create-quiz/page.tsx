@@ -482,7 +482,7 @@ export default function CreateQuizTestPage() {
         await fetch(`/api/quiz/${activeQuiz.id}/session`, { method: "POST" }),
       );
       setStatus(`Live session ${data.session.sessionCode}`);
-      router.push(`/quiz/${data.session.sessionCode}/host`);
+      router.push(`/join-quiz/${data.session.sessionCode}/host`);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to start live session",
