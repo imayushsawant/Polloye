@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { AppNav, appShellVars } from "@/components/app-nav";
 
 type QuizRow = {
   id: string;
@@ -108,133 +109,134 @@ export default function QuizzesPage() {
   }
 
   if (isPending || (loading && !session)) {
-    return <main style={page}>Loading…</main>;
+    return <main style={appShellVars}>Loading…</main>;
   }
 
   if (!session) {
-    return <main style={page}>Redirecting to login…</main>;
+    return <main style={appShellVars}>Redirecting to login…</main>;
   }
 
   return (
-    <main style={page}>
-      <header style={header}>
-        <div>
-          <h1 style={{ margin: 0 }}>My quizzes</h1>
-          <p style={{ margin: "4px 0 0", color: "#555" }}>
-            Signed in as {session.user.email}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-          <button type="button" onClick={() => setImportOpen((o) => !o)}>
-            Import quiz
-          </button>
-          <Link href="/create-quiz" style={linkBtn}>
-            Create quiz
-          </Link>
-          <button type="button" onClick={() => authClient.signOut()}>
-            Sign out
-          </button>
-        </div>
-      </header>
-
-      {importOpen && (
-        <section style={card}>
-          <h2 style={{ margin: 0, fontSize: 18 }}>Import from sharing code</h2>
-          <p style={{ margin: 0, color: "#555", fontSize: 14 }}>
-            Paste another user’s 6-character quiz sharing code to clone it into
-            your account.
-          </p>
-          <form onSubmit={importQuiz} style={{ display: "flex", gap: 8 }}>
-            <input
-              value={importCode}
-              onChange={(e) => setImportCode(e.target.value.toUpperCase())}
-              placeholder="e.g. AB12CD"
-              maxLength={6}
-              required
-              style={{ flex: 1, padding: 8, letterSpacing: 2 }}
-            />
-            <button type="submit" disabled={importing || importCode.trim().length < 6}>
-              {importing ? "Importing…" : "Import"}
+    <div style={appShellVars}>
+      <AppNav />
+      <main style={main}>
+        <header style={pageHead}>
+          <div>
+            <h1 style={title}>My quizzes</h1>
+            <p style={sub}>Templates you’ve created — host a live session anytime.</p>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button type="button" style={btnSecondary} onClick={() => setImportOpen((o) => !o)}>
+              Import quiz
             </button>
-            <button type="button" onClick={() => setImportOpen(false)}>
-              Cancel
-            </button>
-          </form>
-        </section>
-      )}
+            <Link href="/create-quiz" style={btnAccent}>
+              Create quiz
+            </Link>
+          </div>
+        </header>
 
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      {status && <p style={{ color: "green" }}>{status}</p>}
+        {importOpen && (
+          <section style={card}>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 500 }}>
+              Import from sharing code
+            </h2>
+            <p style={{ margin: 0, color: "var(--ink-muted)", fontSize: 14 }}>
+              Paste another user’s 6-character quiz sharing code to clone it into
+              your account.
+            </p>
+            <form onSubmit={importQuiz} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input
+                value={importCode}
+                onChange={(e) => setImportCode(e.target.value.toUpperCase())}
+                placeholder="e.g. AB12CD"
+                maxLength={6}
+                required
+                style={input}
+              />
+              <button
+                type="submit"
+                style={btnPrimary}
+                disabled={importing || importCode.trim().length < 6}
+              >
+                {importing ? "Importing…" : "Import"}
+              </button>
+              <button type="button" style={btnSecondary} onClick={() => setImportOpen(false)}>
+                Cancel
+              </button>
+            </form>
+          </section>
+        )}
 
-      {loading ? (
-        <p>Loading quizzes…</p>
-      ) : quizzes.length === 0 ? (
-        <section style={card}>
-          <p style={{ margin: 0 }}>
-            You haven’t created any quizzes yet.{" "}
-            <Link href="/create-quiz">Create one</Link> or import a sharing
-            code.
-          </p>
-        </section>
-      ) : (
-        <ul style={list}>
-          {quizzes.map((quiz) => (
-            <li key={quiz.id} style={row}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <strong style={{ fontSize: 18 }}>{quiz.name}</strong>
-                {quiz.description && (
-                  <p style={{ margin: "4px 0 0", color: "#555" }}>
-                    {quiz.description}
+        {error && <p style={errorText}>{error}</p>}
+        {status && <p style={statusText}>{status}</p>}
+
+        {loading ? (
+          <p style={muted}>Loading quizzes…</p>
+        ) : quizzes.length === 0 ? (
+          <section style={card}>
+            <p style={{ margin: 0 }}>
+              You haven’t created any quizzes yet.{" "}
+              <Link href="/create-quiz" style={inlineLink}>
+                Create one
+              </Link>{" "}
+              or import a sharing code.
+            </p>
+          </section>
+        ) : (
+          <ul style={list}>
+            {quizzes.map((quiz) => (
+              <li key={quiz.id} style={row}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <strong style={rowTitle}>{quiz.name}</strong>
+                  {quiz.description && (
+                    <p style={rowMeta}>{quiz.description}</p>
+                  )}
+                  <p style={rowMeta}>
+                    {quiz._count.questions} questions · {quiz._count.sessions}{" "}
+                    sessions · share <code>{quiz.quizSharingCode}</code>
+                    {" · "}
+                    <Link href={`/share-quiz/${quiz.quizSharingCode}`} style={inlineLink}>
+                      share link
+                    </Link>
+                    {" · "}
+                    <Link href="/create-quiz" style={inlineLink}>
+                      edit in builder
+                    </Link>
                   </p>
-                )}
-                <p style={{ margin: "8px 0 0", fontSize: 13, color: "#666" }}>
-                  {quiz._count.questions} questions · {quiz._count.sessions}{" "}
-                  sessions · share{" "}
-                  <code>{quiz.quizSharingCode}</code>
-                  {" · "}
-                  <Link href={`/share-quiz/${quiz.quizSharingCode}`}>
-                    share link
-                  </Link>
-                  {" · "}
-                  <Link href={`/create-quiz`}>edit in builder</Link>
-                </p>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                </div>
                 <button
                   type="button"
+                  style={btnPrimary}
                   disabled={
                     startingId === quiz.id || quiz._count.questions === 0
                   }
-                  onClick={() => startWaitingRoom(quiz.id)}
+                  onClick={() => void startWaitingRoom(quiz.id)}
                   title={
                     quiz._count.questions === 0
                       ? "Add questions before starting"
                       : "Open host waiting room"
                   }
                 >
-                  {startingId === quiz.id
-                    ? "Starting…"
-                    : "Start waiting room"}
+                  {startingId === quiz.id ? "Starting…" : "Start waiting room"}
                 </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+    </div>
   );
 }
 
-const page: CSSProperties = {
+const main: CSSProperties = {
   maxWidth: 900,
   margin: "0 auto",
-  padding: 24,
+  padding: "48px 24px 96px",
   display: "grid",
-  gap: 20,
-  fontFamily: "ui-sans-serif, system-ui, sans-serif",
+  gap: 24,
 };
 
-const header: CSSProperties = {
+const pageHead: CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   gap: 16,
@@ -242,9 +244,25 @@ const header: CSSProperties = {
   flexWrap: "wrap",
 };
 
+const title: CSSProperties = {
+  margin: 0,
+  fontSize: 40,
+  fontWeight: 500,
+  letterSpacing: "-0.8px",
+  lineHeight: 1.15,
+};
+
+const sub: CSSProperties = {
+  margin: "4px 0 0",
+  fontSize: 16,
+  lineHeight: 1.5,
+  color: "var(--ink-muted)",
+};
+
 const card: CSSProperties = {
-  border: "1px solid #ddd",
-  borderRadius: 8,
+  background: "var(--surface)",
+  border: "1px solid var(--hairline)",
+  borderRadius: 12,
   padding: 16,
   display: "grid",
   gap: 12,
@@ -259,8 +277,9 @@ const list: CSSProperties = {
 };
 
 const row: CSSProperties = {
-  border: "1px solid #ddd",
-  borderRadius: 8,
+  background: "var(--surface)",
+  border: "1px solid var(--hairline)",
+  borderRadius: 12,
   padding: 16,
   display: "flex",
   gap: 16,
@@ -269,13 +288,60 @@ const row: CSSProperties = {
   flexWrap: "wrap",
 };
 
-const linkBtn: CSSProperties = {
+const rowTitle: CSSProperties = { fontSize: 18, fontWeight: 500 };
+const rowMeta: CSSProperties = {
+  margin: "4px 0 0",
+  fontSize: 13,
+  color: "var(--ink-muted)",
+};
+
+const input: CSSProperties = {
+  flex: 1,
+  minWidth: 120,
+  padding: "10px 14px",
+  borderRadius: 8,
+  border: "1px solid var(--hairline)",
+  fontSize: 16,
+  fontFamily: "inherit",
+  letterSpacing: 1,
+  background: "var(--surface)",
+};
+
+const btnBase: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
-  padding: "6px 12px",
-  border: "1px solid #ccc",
-  borderRadius: 4,
+  justifyContent: "center",
+  fontFamily: "inherit",
+  fontSize: 15,
+  fontWeight: 500,
+  padding: "10px 18px",
+  borderRadius: 8,
+  border: "1px solid transparent",
+  cursor: "pointer",
   textDecoration: "none",
-  color: "inherit",
-  background: "#f7f7f7",
+  whiteSpace: "nowrap",
 };
+
+const btnPrimary: CSSProperties = {
+  ...btnBase,
+  background: "var(--ink)",
+  color: "#fff",
+};
+
+const btnAccent: CSSProperties = {
+  ...btnBase,
+  background: "var(--sage)",
+  color: "#fff",
+};
+
+const btnSecondary: CSSProperties = {
+  ...btnBase,
+  background: "var(--surface)",
+  color: "var(--ink)",
+  borderColor: "var(--hairline)",
+};
+
+const muted: CSSProperties = { margin: 0, color: "var(--ink-muted)" };
+const errorText: CSSProperties = { margin: 0, color: "#c41c1c" };
+const statusText: CSSProperties = { margin: 0, color: "var(--sage)" };
+const inlineLink: CSSProperties = { color: "var(--ink)", fontWeight: 500 };
