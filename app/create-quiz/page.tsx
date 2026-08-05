@@ -559,6 +559,9 @@ export default function CreateQuizTestPage() {
         <div>
           <h1>Create Quiz (test harness)</h1>
           <p>Signed in as {session.user.email}</p>
+          <p>
+            <a href="/quizzes">← My quizzes</a>
+          </p>
           <p style={{ color: "#555", fontSize: 14 }}>
             Edit cards locally. Each card saves as one{" "}
             <code>{"{ question, options }"}</code> POST/PATCH. “Add question”

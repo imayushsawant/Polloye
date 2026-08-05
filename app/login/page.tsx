@@ -22,7 +22,7 @@ export default function LoginPage() {
       setError(signInError.message ?? "Sign in failed");
       return;
     }
-    router.push("/create-quiz");
+    router.push("/quizzes");
   }
 
   return (

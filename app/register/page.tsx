@@ -24,7 +24,7 @@ export default function RegisterPage() {
       setError(signUpError.message ?? "Sign up failed");
       return;
     }
-    router.push("/create-quiz");
+    router.push("/quizzes");
   }
 
   return (
