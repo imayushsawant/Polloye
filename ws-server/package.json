@@ -12,7 +12,8 @@
     "jose": "^6.2.8",
     "pg": "^8.22.0",
     "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",

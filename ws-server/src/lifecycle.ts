@@ -1,5 +1,6 @@
 import type { Server, Socket } from "socket.io";
 import { pool } from "./db.js";
+import { logger } from "./logger.js";
 import {
   buildOptionCounts,
   calculatePoints,
@@ -119,12 +120,24 @@ async function persistActiveResponses(session: LiveSession) {
     await client.query("COMMIT");
   } catch (err) {
     await client.query("ROLLBACK");
+    logger.error("persist_responses_failed", {
+      sessionId: session.sessionId,
+      sessionCode: session.sessionCode,
+      questionId: question.id,
+      responseCount: rows.length,
+      err: err instanceof Error ? err.message : "unknown",
+    });
     throw err;
   } finally {
     client.release();
   }
 
   session.activeResponses.clear();
+  logger.debug("responses_persisted", {
+    sessionId: session.sessionId,
+    questionId: question.id,
+    responseCount: rows.length,
+  });
 }
 
 export async function revealAnswer(io: Server, session: LiveSession) {
@@ -133,6 +146,15 @@ export async function revealAnswer(io: Server, session: LiveSession) {
 
   const question = session.questions[session.currentQuestionIndex];
   if (!question) return;
+
+  logger.info("answer_revealed", {
+    sessionId: session.sessionId,
+    sessionCode: session.sessionCode,
+    questionId: question.id,
+    position: question.position,
+    responseCount: session.activeResponses.size,
+    hostConnected: session.hostConnected,
+  });
 
   const correctOptionIds = question.options
     .filter((o) => o.optionNature === "CORRECT")
@@ -190,6 +212,12 @@ export function showLeaderboard(io: Server, session: LiveSession) {
   clearSessionTimers(session);
   session.phase = "leaderboard";
   session.questionsSinceLeaderboard = 0;
+  logger.info("leaderboard_shown", {
+    sessionId: session.sessionId,
+    sessionCode: session.sessionCode,
+    participantCount: session.participants.size,
+    questionIndex: session.currentQuestionIndex,
+  });
   io.to(roomName(session.sessionCode)).emit("leaderboard:show", {
     leaderboard: leaderboardPayload(session),
     finished: session.currentQuestionIndex >= session.questions.length - 1,
@@ -219,6 +247,14 @@ export async function showNextQuestion(io: Server, session: LiveSession) {
   );
 
   const question = session.questions[nextIndex];
+  logger.info("question_shown", {
+    sessionId: session.sessionId,
+    sessionCode: session.sessionCode,
+    questionId: question.id,
+    position: question.position,
+    index: nextIndex,
+    hostConnected: session.hostConnected,
+  });
   io.to(roomName(session.sessionCode)).emit(
     "question:reveal",
     publicQuestionPayload(question),
@@ -237,6 +273,12 @@ export async function showNextQuestion(io: Server, session: LiveSession) {
 export async function finishSession(io: Server, session: LiveSession) {
   clearSessionTimers(session);
   session.phase = "finished";
+
+  logger.info("session_finished", {
+    sessionId: session.sessionId,
+    sessionCode: session.sessionCode,
+    participantCount: session.participants.size,
+  });
 
   await pool.query(
     `UPDATE quiz_session SET state = 'FINISHED' WHERE id = $1`,
@@ -280,6 +322,12 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
 
   const session = getSessionByCode(auth.sessionCode);
   if (!session) {
+    logger.error("socket_session_missing", {
+      socketId: socket.id,
+      role: auth.role,
+      sessionId: auth.sessionId,
+      sessionCode: auth.sessionCode,
+    });
     socket.emit("error", { message: "Session not found in memory. Host must start again." });
     socket.disconnect(true);
     return;
@@ -290,6 +338,12 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
 
   if (auth.role === "host") {
     if (auth.userId !== session.hostUserId) {
+      logger.error("host_auth_mismatch", {
+        socketId: socket.id,
+        sessionId: session.sessionId,
+        sessionCode: session.sessionCode,
+        userId: auth.userId,
+      });
       socket.emit("error", { message: "Not the host of this session" });
       socket.disconnect(true);
       return;
@@ -309,6 +363,13 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
       clearSessionTimers(session);
     }
 
+    logger.info("host_connected", {
+      socketId: socket.id,
+      sessionId: session.sessionId,
+      sessionCode: session.sessionCode,
+      userId: auth.userId,
+      phase: session.phase,
+    });
     io.to(room).emit("host:reconnected", {});
     socket.emit("session:state", snapshotState(session));
   } else {
@@ -323,20 +384,40 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
     // Mid-question reconnect: cannot answer the ongoing question
     if (session.phase === "question_active") {
       session.blockedFromCurrentQuestion.add(participantAuth.participantId);
+      logger.warn("participant_mid_question_join", {
+        sessionId: session.sessionId,
+        sessionCode: session.sessionCode,
+        participantId: participantAuth.participantId,
+        questionIndex: session.currentQuestionIndex,
+      });
       // Already-submitted players still get live tallies after reconnect
       if (session.activeResponses.has(participantAuth.participantId)) {
         emitOptionCounts(io, session);
       }
     }
 
+    logger.info("participant_connected", {
+      socketId: socket.id,
+      sessionId: session.sessionId,
+      sessionCode: session.sessionCode,
+      participantId: participantAuth.participantId,
+      phase: session.phase,
+    });
     emitParticipantCount(io, session);
     socket.emit("session:state", snapshotState(session));
   }
 
   socket.on("host:showQuestion", async () => {
     if (auth.role !== "host") return;
-    if (session.phase === "question_active") {
-      socket.emit("error", { message: "A question is already active" });
+    // First question only — later advances use host:nextQuestion
+    if (session.phase !== "lobby") {
+      logger.warn("host_show_question_rejected", {
+        sessionId: session.sessionId,
+        phase: session.phase,
+      });
+      socket.emit("error", {
+        message: "Quiz already started — use Next question after reveal",
+      });
       return;
     }
     await showNextQuestion(io, session);
@@ -350,6 +431,10 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
   socket.on("host:nextQuestion", async () => {
     if (auth.role !== "host") return;
     if (session.phase !== "answer_revealed" && session.phase !== "leaderboard") {
+      logger.warn("host_next_rejected", {
+        sessionId: session.sessionId,
+        phase: session.phase,
+      });
       socket.emit("error", { message: "Reveal the answer before advancing" });
       return;
     }
@@ -359,6 +444,10 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
   socket.on("host:showLeaderboard", () => {
     if (auth.role !== "host") return;
     if (session.phase !== "answer_revealed" && session.phase !== "leaderboard") {
+      logger.warn("host_leaderboard_rejected", {
+        sessionId: session.sessionId,
+        phase: session.phase,
+      });
       socket.emit("error", { message: "Reveal the answer before leaderboard" });
       return;
     }
@@ -372,18 +461,34 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
       const participantId = auth.participantId;
 
       if (session.phase !== "question_active" || session.questionShownAt == null) {
+        logger.warn("submit_rejected_no_active_question", {
+          sessionId: session.sessionId,
+          participantId,
+          phase: session.phase,
+        });
         socket.emit("error", { message: "No active question" });
         return;
       }
 
       const question = session.questions[session.currentQuestionIndex];
       if (!question || payload.question_id !== question.id) {
+        logger.warn("submit_rejected_question_mismatch", {
+          sessionId: session.sessionId,
+          participantId,
+          questionId: payload.question_id,
+          expectedQuestionId: question?.id,
+        });
         socket.emit("error", { message: "Question mismatch" });
         return;
       }
 
       // Cutoff: if reveal already happened, reject (phase check covers this)
       if (session.blockedFromCurrentQuestion.has(participantId)) {
+        logger.warn("submit_rejected_blocked", {
+          sessionId: session.sessionId,
+          participantId,
+          questionId: question.id,
+        });
         socket.emit("error", {
           message: "Cannot answer the current question after mid-question join/reconnect",
         });
@@ -392,6 +497,11 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
 
       // First response wins
       if (session.activeResponses.has(participantId)) {
+        logger.warn("submit_rejected_duplicate", {
+          sessionId: session.sessionId,
+          participantId,
+          questionId: question.id,
+        });
         socket.emit("error", { message: "Already submitted" });
         return;
       }
@@ -417,6 +527,16 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
         participant.totalScore += pointEarned;
       }
 
+      logger.info("answer_submitted", {
+        sessionId: session.sessionId,
+        sessionCode: session.sessionCode,
+        participantId,
+        questionId: question.id,
+        optionCount: optionIds.length,
+        pointEarned,
+        elapsedMs,
+      });
+
       socket.emit("answer:accepted", {
         question_id: question.id,
         // Score hidden from participant until reveal — still ack receipt
@@ -431,6 +551,12 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
       if (session.hostSocketId === socket.id) {
         session.hostConnected = false;
         session.hostSocketId = null;
+        logger.warn("host_disconnected", {
+          socketId: socket.id,
+          sessionId: session.sessionId,
+          sessionCode: session.sessionCode,
+          phase: session.phase,
+        });
         io.to(room).emit("host:disconnected", {
           message: "Host disconnected. Quiz continues autonomously.",
         });
@@ -455,6 +581,13 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
       if (session.participantSockets.get(auth.participantId) === socket.id) {
         session.participantSockets.delete(auth.participantId);
       }
+      logger.warn("participant_disconnected", {
+        socketId: socket.id,
+        sessionId: session.sessionId,
+        sessionCode: session.sessionCode,
+        participantId: auth.participantId,
+        phase: session.phase,
+      });
       emitParticipantCount(io, session);
     }
   });

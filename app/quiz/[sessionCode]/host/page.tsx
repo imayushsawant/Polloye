@@ -197,43 +197,54 @@ export default function LiveHostPage({
       )}
 
       <section style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <button
-          type="button"
-          disabled={!socket || phase === "question_active"}
-          onClick={() => socket?.emit("host:showQuestion")}
-        >
-          Show question
-        </button>
-        <button
-          type="button"
-          disabled={!socket || phase !== "question_active"}
-          onClick={() => socket?.emit("host:revealAnswer")}
-        >
-          Reveal answer
-        </button>
-        <button
-          type="button"
-          disabled={
-            !socket ||
-            (phase !== "answer_revealed" && phase !== "leaderboard")
-          }
-          onClick={() => socket?.emit("host:showLeaderboard")}
-        >
-          Show leaderboard
-        </button>
-        <button
-          type="button"
-          disabled={
-            !socket ||
-            (phase !== "answer_revealed" && phase !== "leaderboard")
-          }
-          onClick={() => socket?.emit("host:nextQuestion")}
-        >
-          Next question
-        </button>
+        {(phase === "lobby" || phase === "connecting") && (
+          <button
+            type="button"
+            disabled={!socket || phase === "connecting"}
+            onClick={() => socket?.emit("host:showQuestion")}
+          >
+            Show first question
+          </button>
+        )}
+        {phase === "question_active" && (
+          <button
+            type="button"
+            disabled={!socket}
+            onClick={() => socket?.emit("host:revealAnswer")}
+          >
+            Reveal answer
+          </button>
+        )}
+        {phase === "answer_revealed" && (
+          <>
+            <button
+              type="button"
+              disabled={!socket}
+              onClick={() => socket?.emit("host:showLeaderboard")}
+            >
+              Show leaderboard
+            </button>
+            <button
+              type="button"
+              disabled={!socket}
+              onClick={() => socket?.emit("host:nextQuestion")}
+            >
+              Next question
+            </button>
+          </>
+        )}
+        {phase === "leaderboard" && (
+          <button
+            type="button"
+            disabled={!socket}
+            onClick={() => socket?.emit("host:nextQuestion")}
+          >
+            Next question
+          </button>
+        )}
       </section>
 
-      {leaderboard.length > 0 && (
+      {phase === "leaderboard" && leaderboard.length > 0 && (
         <section style={card}>
           <h2>Leaderboard</h2>
           <ol>
@@ -243,14 +254,6 @@ export default function LiveHostPage({
               </li>
             ))}
           </ol>
-          {phase === "leaderboard" && (
-            <button
-              type="button"
-              onClick={() => socket?.emit("host:nextQuestion")}
-            >
-              Next question
-            </button>
-          )}
         </section>
       )}
     </main>
