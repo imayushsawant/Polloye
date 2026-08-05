@@ -126,12 +126,15 @@ model QuizSession {
   quizId      String
   state       QuizSessionState @default(INACTIVE)
   conductedAt DateTime         @default(now())
+  startedAt   DateTime?
+  endedAt     DateTime?
   sessionCode String           @unique // 6-char alphanumeric, join + view results
 
   quiz         Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
   participants Participant[]
 
   @@index([quizId])
+  @@index([state, conductedAt])
   @@map("quiz_session")
 }
 

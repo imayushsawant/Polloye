@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { verifyWsToken } from "./auth.js";
 import { attachSocketHandlers } from "./lifecycle.js";
+import { startInactiveSessionCron } from "./cleanup.js";
 import { logger } from "./logger.js";
 import { bootstrapSession, getSessionByCode } from "./store.js";
 import type { LiveQuestion } from "./types.js";
@@ -214,4 +215,5 @@ io.on("connection", (socket) => {
 
 httpServer.listen(PORT, () => {
   logger.info("ws_server_listening", { port: PORT });
+  startInactiveSessionCron();
 });

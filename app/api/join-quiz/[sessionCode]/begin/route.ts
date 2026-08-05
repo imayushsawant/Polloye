@@ -102,7 +102,10 @@ export async function POST(request: Request, context: RouteContext) {
 
   const updated = await prisma.quizSession.update({
     where: { id: session.id },
-    data: { state: "ACTIVE" },
+    data: {
+      state: "ACTIVE",
+      startedAt: session.startedAt ?? new Date(),
+    },
   });
 
   return jsonOk({ session: updated });

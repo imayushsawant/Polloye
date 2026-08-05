@@ -28,6 +28,8 @@ export async function GET(_request: Request, context: RouteContext) {
       sessionCode: session.sessionCode,
       state: session.state,
       conductedAt: session.conductedAt,
+      startedAt: session.startedAt ?? session.conductedAt,
+      endedAt: session.endedAt,
       quiz: session.quiz,
       leaderboard: session.participants,
     },

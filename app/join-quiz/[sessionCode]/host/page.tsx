@@ -3,10 +3,72 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { Badge, Button, Card, Eyebrow } from "@/components/ui";
+import { Button, Card, Eyebrow } from "@/components/ui";
 
 function hostTokenStorageKey(sessionCode: string) {
   return `polloye:host:${sessionCode.toUpperCase()}`;
+}
+
+function IconTrash({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
+function IconCopy({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+    </svg>
+  );
+}
+
+function IconCheck({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
 }
 
 /** Host waiting room — mint token here; Begin loads quiz into WS then goes live. */
@@ -25,6 +87,7 @@ export default function HostWaitingRoomPage({
   const [tokenReady, setTokenReady] = useState(false);
   const [error, setError] = useState("");
   const [joining, setJoining] = useState(false);
+  const [scrapping, setScrapping] = useState(false);
   const [joinUrl, setJoinUrl] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -97,6 +160,33 @@ export default function HostWaitingRoomPage({
     }
   }
 
+  async function scrapSession() {
+    if (scrapping) return;
+    const ok = window.confirm(
+      "Scrap this waiting room? Players will no longer be able to join this code.",
+    );
+    if (!ok) return;
+
+    setError("");
+    setScrapping(true);
+    try {
+      const res = await fetch(`/api/session/${sessionCode}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? "Failed to scrap session");
+        setScrapping(false);
+        return;
+      }
+      sessionStorage.removeItem(hostTokenStorageKey(sessionCode));
+      router.replace("/quizzes");
+    } catch {
+      setError("Failed to scrap session");
+      setScrapping(false);
+    }
+  }
+
   async function beginQuiz() {
     setError("");
     setJoining(true);
@@ -131,26 +221,51 @@ export default function HostWaitingRoomPage({
 
   return (
     <main className="flex min-h-dvh flex-col bg-canvas px-5 py-10">
-      <div className="mx-auto flex w-full max-w-lg flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <Eyebrow tone="sage">Polloye</Eyebrow>
-            <Badge tone="phase">Host lobby</Badge>
-          </div>
+      <div className="relative mx-auto flex w-full max-w-lg flex-col gap-8">
+        <button
+          type="button"
+          className="absolute top-0 right-0 inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-ink-muted transition-colors hover:bg-surface-2 hover:text-semantic-error disabled:opacity-40"
+          aria-label="Scrap session"
+          title="Scrap session"
+          disabled={scrapping || sessionState === "FINISHED"}
+          onClick={() => void scrapSession()}
+        >
+          <IconTrash />
+        </button>
+
+        <div className="flex flex-col gap-3 pr-12">
+          <Eyebrow tone="sage">Polloye</Eyebrow>
           <h1 className="text-headline m-0">Waiting room</h1>
-          <p className="text-mono m-0 text-[28px] tracking-wide text-ink">
-            {sessionCode}
+          <p className="text-body m-0 text-ink-muted">
+            Share the code or link so players can join.
           </p>
         </div>
 
-        <Card padding="lg" className="flex flex-col gap-5">
-          <div className="flex flex-col gap-1">
-            <p className="text-eyebrow m-0 text-ink-muted">Join link</p>
-            <p className="text-body-sm m-0 break-all text-ink">{joinUrl || "…"}</p>
+        <Card padding="lg" className="flex flex-col gap-6">
+          <div className="flex flex-col items-center gap-3 py-2 text-center">
+            <p className="text-eyebrow m-0 text-ink-muted">Join code</p>
+            <p className="text-mono m-0 text-[64px] font-medium leading-none tracking-[0.18em] text-ink sm:text-[80px]">
+              {sessionCode}
+            </p>
           </div>
-          <Button variant="secondary" onClick={copyJoinUrl} className="w-full">
-            {copied ? "Copied" : "Copy join link"}
-          </Button>
+
+          <div className="flex flex-col gap-2 border-t border-hairline pt-5">
+            <p className="text-eyebrow m-0 text-ink-muted">Join link</p>
+            <div className="flex items-center gap-2">
+              <p className="text-body-sm m-0 min-w-0 flex-1 break-all text-ink">
+                {joinUrl || "…"}
+              </p>
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-md border border-hairline bg-surface-1 text-ink-muted transition-colors hover:text-ink"
+                aria-label={copied ? "Copied" : "Copy join link"}
+                title={copied ? "Copied" : "Copy join link"}
+                onClick={() => void copyJoinUrl()}
+              >
+                {copied ? <IconCheck /> : <IconCopy />}
+              </button>
+            </div>
+          </div>
 
           {qrSrc && (
             <div className="flex flex-col items-center gap-3 border-t border-hairline pt-5">
@@ -179,7 +294,7 @@ export default function HostWaitingRoomPage({
             variant="accent"
             className="w-full"
             disabled={!tokenReady || joining || sessionState === "FINISHED"}
-            onClick={beginQuiz}
+            onClick={() => void beginQuiz()}
           >
             {joining ? "Starting…" : "Begin quiz"}
           </Button>

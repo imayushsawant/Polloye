@@ -263,7 +263,7 @@ export async function showNextQuestion(io: Server, session: LiveSession) {
   session.blockedFromCurrentQuestion.clear();
 
   await pool.query(
-    `UPDATE quiz_session SET state = 'ACTIVE' WHERE id = $1`,
+    `UPDATE quiz_session SET state = 'ACTIVE', "startedAt" = COALESCE("startedAt", NOW()) WHERE id = $1`,
     [session.sessionId],
   );
 
@@ -302,7 +302,7 @@ export async function finishSession(io: Server, session: LiveSession) {
   });
 
   await pool.query(
-    `UPDATE quiz_session SET state = 'FINISHED' WHERE id = $1`,
+    `UPDATE quiz_session SET state = 'FINISHED', "endedAt" = NOW() WHERE id = $1`,
     [session.sessionId],
   );
 

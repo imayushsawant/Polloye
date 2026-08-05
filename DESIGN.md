@@ -485,6 +485,7 @@ Polloye resists drop shadows. Depth is communicated by the white-on-cream surfac
 - Use quiz UI screenshots as the protagonist of every section.
 - Use `{rounded.lg}` 12px for cards and `{rounded.xl}` 16px for product mockup tiles.
 - Apply negative tracking proportionally to display sizes.
+- Prefer **SVG icons** for compact product chrome — delete/scrap, copy, settings/advanced, collapse, drag handles, and similar icon-only controls. Use an accessible `aria-label` / `title`; do not rely on visible button text for these actions.
 
 ### Don't
 
@@ -496,6 +497,7 @@ Polloye resists drop shadows. Depth is communicated by the white-on-cream surfac
 - Don't write all-caps tracked eyebrows.
 - Don't promote the report palette colors to brand-level surfaces.
 - Don't combine charcoal CTAs and Sage Green CTAs in the same viewport.
+- Don't label icon-only chrome with prose like “Delete”, “Advanced”, or “Remove option” when a clear SVG + `aria-label` is enough.
 
 ## Responsive Behavior
 

@@ -7,23 +7,44 @@ export async function GET(request: Request) {
 
   try {
     const rows = await prisma.quizSession.findMany({
-      where: { quiz: { userId: authResult.userId } },
-      orderBy: { conductedAt: "desc" },
+      where: {
+        state: "FINISHED",
+        quiz: { userId: authResult.userId },
+      },
+      orderBy: [{ startedAt: "desc" }, { conductedAt: "desc" }],
       include: {
         quiz: { select: { id: true, name: true } },
+        participants: {
+          orderBy: { totalScore: "desc" },
+          take: 10,
+          select: {
+            id: true,
+            participantName: true,
+            totalScore: true,
+          },
+        },
         _count: { select: { participants: true } },
       },
     });
 
     return jsonOk({
-      conducted: rows.map((s) => ({
-        id: s.id,
-        sessionCode: s.sessionCode,
-        state: s.state,
-        conductedAt: s.conductedAt,
-        participantCount: s._count.participants,
-        quiz: s.quiz,
-      })),
+      conducted: rows.map((s) => {
+        const start = s.startedAt ?? s.conductedAt;
+        const end = s.endedAt;
+        const durationMs =
+          end != null ? Math.max(0, end.getTime() - start.getTime()) : null;
+
+        return {
+          id: s.id,
+          sessionCode: s.sessionCode,
+          quiz: s.quiz,
+          participantCount: s._count.participants,
+          startedAt: start.toISOString(),
+          endedAt: end?.toISOString() ?? null,
+          durationMs,
+          topLeaderboard: s.participants,
+        };
+      }),
     });
   } catch {
     return jsonError("Failed to load conducted quizzes", 500);
