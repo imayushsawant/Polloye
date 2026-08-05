@@ -68,17 +68,12 @@ export function AppNav({ children, onTour, onSignOut }: Props) {
   );
 }
 
+/** Thin layout helper — colors come from globals.css tokens. */
 export const appShellVars: CSSProperties = {
   minHeight: "100vh",
-  background: "var(--canvas, #f5f1ec)",
-  color: "var(--ink, #111111)",
+  background: "var(--canvas)",
+  color: "var(--ink)",
   fontFamily: "var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif",
-  ["--canvas" as string]: "#f5f1ec",
-  ["--surface" as string]: "#ffffff",
-  ["--ink" as string]: "#111111",
-  ["--ink-muted" as string]: "#626260",
-  ["--hairline" as string]: "#d3cec6",
-  ["--sage" as string]: "#7BA05B",
 };
 
 const nav: CSSProperties = {
@@ -90,8 +85,8 @@ const nav: CSSProperties = {
   alignItems: "center",
   gap: 24,
   padding: "8px 24px",
-  background: "var(--canvas, #f5f1ec)",
-  borderBottom: "1px solid var(--hairline, #d3cec6)",
+  background: "var(--canvas)",
+  borderBottom: "1px solid var(--hairline)",
   flexWrap: "wrap",
 };
 
@@ -100,7 +95,7 @@ const brand: CSSProperties = {
   fontWeight: 500,
   letterSpacing: "-0.3px",
   textDecoration: "none",
-  color: "var(--ink, #111)",
+  color: "var(--ink)",
   flexShrink: 0,
 };
 
@@ -115,13 +110,13 @@ const navLinks: CSSProperties = {
 const navLink: CSSProperties = {
   fontSize: 14,
   fontWeight: 500,
-  color: "var(--ink, #111)",
+  color: "var(--ink)",
   textDecoration: "none",
 };
 
 const navLinkActive: CSSProperties = {
   ...navLink,
-  color: "var(--sage, #7BA05B)",
+  color: "var(--sage)",
 };
 
 const navRight: CSSProperties = {
@@ -137,9 +132,9 @@ const btnGhost: CSSProperties = {
   fontWeight: 500,
   lineHeight: 1.2,
   padding: "8px 12px",
-  borderRadius: 8,
+  borderRadius: "var(--radius-md)",
   border: "1px solid transparent",
   cursor: "pointer",
   background: "transparent",
-  color: "var(--ink-muted, #626260)",
+  color: "var(--ink-muted)",
 };
