@@ -1,15 +1,24 @@
 "use client";
 
 import {
-  type CSSProperties,
   type FormEvent,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { AppNav, appShellVars } from "@/components/app-nav";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Eyebrow,
+  Input,
+} from "@/components/ui";
 
 type QuestionType = "MCQ" | "MSQ" | "TRUE_FALSE";
 type AnalyticsType = "BARCHART" | "PIE_CHART" | "DONUT_CHART";
@@ -49,6 +58,11 @@ type QuizSummary = {
 };
 
 const DEBOUNCE_MS = 800;
+
+const fieldClass =
+  "w-full min-h-11 rounded-md border border-hairline bg-surface-1 px-3.5 py-2.5 text-body text-ink outline-none transition-colors focus:border-ink disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-surface-2";
+
+const labelClass = "flex flex-col gap-1.5 text-body-sm font-medium text-ink";
 
 function newLocalId() {
   return crypto.randomUUID();
@@ -134,10 +148,6 @@ export default function CreateQuizTestPage() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
 
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
@@ -206,9 +216,13 @@ export default function CreateQuizTestPage() {
   }, []);
 
   useEffect(() => {
-    if (!session) return;
+    if (isPending) return;
+    if (!session) {
+      router.replace("/login");
+      return;
+    }
     loadQuizzes().catch((err: Error) => setError(err.message));
-  }, [session, loadQuizzes]);
+  }, [isPending, session, router, loadQuizzes]);
 
   useEffect(() => {
     return () => {
@@ -376,36 +390,6 @@ export default function CreateQuizTestPage() {
     setStatus("Question removed");
   }
 
-  async function handleAuth(e: FormEvent) {
-    e.preventDefault();
-    setError("");
-    setStatus("");
-
-    if (authMode === "signup") {
-      const { error: signUpError } = await authClient.signUp.email({
-        email,
-        password,
-        name: name || email.split("@")[0],
-      });
-      if (signUpError) {
-        setError(signUpError.message ?? "Sign up failed");
-        return;
-      }
-      setStatus("Signed up");
-      return;
-    }
-
-    const { error: signInError } = await authClient.signIn.email({
-      email,
-      password,
-    });
-    if (signInError) {
-      setError(signInError.message ?? "Sign in failed");
-      return;
-    }
-    setStatus("Signed in");
-  }
-
   async function handleCreateQuiz(e: FormEvent) {
     e.preventDefault();
     setError("");
@@ -490,380 +474,341 @@ export default function CreateQuizTestPage() {
     }
   }
 
-  if (isPending) {
-    return <main style={pageStyle}>Loading session…</main>;
-  }
-
-  if (!session) {
+  if (isPending || !session) {
     return (
-      <main style={pageStyle}>
-        <h1>Create Quiz (test)</h1>
-        <p>Sign in to create and edit quizzes.</p>
-        <form onSubmit={handleAuth} style={cardStyle}>
-          <label style={labelStyle}>
-            Mode
-            <select
-              value={authMode}
-              onChange={(e) =>
-                setAuthMode(e.target.value as "signin" | "signup")
-              }
-            >
-              <option value="signin">Sign in</option>
-              <option value="signup">Sign up</option>
-            </select>
-          </label>
-          {authMode === "signup" && (
-            <label style={labelStyle}>
-              Name
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </label>
-          )}
-          <label style={labelStyle}>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </label>
-          <label style={labelStyle}>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={8}
-              required
-            />
-          </label>
-          <button type="submit">
-            {authMode === "signin" ? "Sign in" : "Sign up"}
-          </button>
-        </form>
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-        {status && <p style={{ color: "green" }}>{status}</p>}
+      <main style={appShellVars} className="flex items-center justify-center p-8">
+        <p className="text-body text-ink-muted m-0">
+          {isPending ? "Loading…" : "Redirecting to login…"}
+        </p>
       </main>
     );
   }
 
   return (
-    <main style={pageStyle}>
-      <header
-        style={{ display: "flex", justifyContent: "space-between", gap: 16 }}
-      >
-        <div>
-          <h1>Create Quiz (test harness)</h1>
-          <p>Signed in as {session.user.email}</p>
-          <p>
-            <a href="/dashboard">← Dashboard</a>
+    <div style={appShellVars}>
+      <AppNav />
+      <main className="mx-auto grid max-w-[900px] gap-6 px-6 pb-24 pt-12">
+        <header className="grid gap-2">
+          <Eyebrow>Authoring</Eyebrow>
+          <h1 className="text-display-md m-0 text-ink">Create quiz</h1>
+          <p className="text-body m-0 max-w-xl text-ink-muted">
+            Edit question cards locally. Changes autosave after a short pause.
+            Adding a question finalizes the previous card first.
           </p>
-          <p style={{ color: "#555", fontSize: 14 }}>
-            Edit cards locally. Each card saves as one{" "}
-            <code>{"{ question, options }"}</code> POST/PATCH. “Add question”
-            finalizes the previous card (debounced autosave on edits too).
+        </header>
+
+        {error && (
+          <p
+            className="text-body-sm m-0 whitespace-pre-wrap text-semantic-error"
+            role="alert"
+          >
+            {error}
           </p>
-        </div>
-        <button type="button" onClick={() => authClient.signOut()}>
-          Sign out
-        </button>
-      </header>
-
-      {error && (
-        <p style={{ color: "crimson", whiteSpace: "pre-wrap" }}>{error}</p>
-      )}
-      {status && <p style={{ color: "green" }}>{status}</p>}
-
-      <section style={cardStyle}>
-        <h2>Your quizzes</h2>
-        {quizzes.length === 0 ? (
-          <p>No quizzes yet.</p>
-        ) : (
-          <ul>
-            {quizzes.map((quiz) => (
-              <li key={quiz.id} style={{ marginBottom: 8 }}>
-                <button type="button" onClick={() => loadQuiz(quiz.id)}>
-                  Load
-                </button>{" "}
-                {quiz.name} ({quiz.quizSharingCode})
-              </li>
-            ))}
-          </ul>
         )}
-      </section>
+        {status && <p className="text-body-sm m-0 text-sage">{status}</p>}
 
-      <section style={cardStyle}>
-        <h2>{activeQuiz ? "Edit quiz" : "Create quiz"}</h2>
-        <form
-          onSubmit={activeQuiz ? handleUpdateQuiz : handleCreateQuiz}
-          style={{ display: "grid", gap: 12 }}
-        >
-          <label style={labelStyle}>
-            Name
-            <input
+        <Card className="grid gap-4">
+          <h2 className="text-card-title m-0">Your quizzes</h2>
+          {quizzes.length === 0 ? (
+            <p className="text-body-sm m-0 text-ink-muted">No quizzes yet.</p>
+          ) : (
+            <ul className="m-0 grid list-none gap-2 p-0">
+              {quizzes.map((quiz) => (
+                <li
+                  key={quiz.id}
+                  className="flex flex-wrap items-center gap-3 rounded-md border border-hairline px-3 py-2"
+                >
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void loadQuiz(quiz.id)}
+                  >
+                    Load
+                  </Button>
+                  <span className="text-body-sm min-w-0 flex-1 font-medium">
+                    {quiz.name}
+                  </span>
+                  <code className="text-mono text-ink-muted">
+                    {quiz.quizSharingCode}
+                  </code>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="grid gap-4">
+          <h2 className="text-card-title m-0">
+            {activeQuiz ? "Edit quiz" : "Create quiz"}
+          </h2>
+          <form
+            onSubmit={activeQuiz ? handleUpdateQuiz : handleCreateQuiz}
+            className="grid gap-4"
+          >
+            <Input
+              label="Name"
               value={quizName}
               onChange={(e) => setQuizName(e.target.value)}
               required
             />
-          </label>
-          <label style={labelStyle}>
-            Description
-            <textarea
-              value={quizDescription}
-              onChange={(e) => setQuizDescription(e.target.value)}
-              rows={2}
-            />
-          </label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="submit">
-              {activeQuiz ? "Update quiz" : "Create quiz"}
-            </button>
-            {activeQuiz && (
-              <button type="button" onClick={handleDeleteQuiz}>
-                Delete quiz
-              </button>
-            )}
-            {activeQuiz && (
-              <button type="button" onClick={handleStartLiveSession}>
-                Start live session
-              </button>
-            )}
-          </div>
-        </form>
-        {activeQuiz && (
-          <p>
-            Active: <code>{activeQuiz.id}</code> · code{" "}
-            <code>{activeQuiz.quizSharingCode}</code>
-            {" · "}
-            <a href={`/share-quiz/${activeQuiz.quizSharingCode}`}>
-              Share template
-            </a>
-          </p>
-        )}
-      </section>
-
-      {activeQuiz && (
-        <section style={{ display: "grid", gap: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <h2 style={{ margin: 0 }}>Questions ({cards.length})</h2>
-            <button type="button" onClick={addQuestionCard}>
-              Add question
-            </button>
-          </div>
-
-          {cards.length === 0 && (
-            <p>
-              No question cards yet. Click <strong>Add question</strong>.
+            <label className={labelClass}>
+              Description
+              <textarea
+                value={quizDescription}
+                onChange={(e) => setQuizDescription(e.target.value)}
+                rows={2}
+                className={fieldClass}
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" variant={activeQuiz ? "primary" : "accent"}>
+                {activeQuiz ? "Update quiz" : "Create quiz"}
+              </Button>
+              {activeQuiz && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => void handleDeleteQuiz()}
+                >
+                  Delete quiz
+                </Button>
+              )}
+              {activeQuiz && (
+                <Button
+                  type="button"
+                  variant="accent"
+                  onClick={() => void handleStartLiveSession()}
+                >
+                  Begin
+                </Button>
+              )}
+            </div>
+          </form>
+          {activeQuiz && (
+            <p className="text-caption m-0 text-ink-muted">
+              Share code{" "}
+              <code className="text-mono">{activeQuiz.quizSharingCode}</code>
+              {" · "}
+              <Link
+                href={`/share-quiz/${activeQuiz.quizSharingCode}`}
+                className="font-medium text-ink"
+              >
+                Share template
+              </Link>
             </p>
           )}
+        </Card>
 
-          {cards.map((card, index) => (
-            <article key={card.localId} style={cardStyle}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 8,
-                  alignItems: "center",
-                }}
-              >
-                <strong>
-                  Card {index + 1} · position {card.question.position} ·{" "}
-                  {card.serverId ? "saved" : "new"}
-                  {card.dirty ? " · dirty" : ""}
-                  {card.saving ? " · saving…" : ""}
-                </strong>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    type="button"
-                    disabled={card.saving}
-                    onClick={() => saveCard(card.localId)}
-                  >
-                    {card.serverId ? "Save (PATCH)" : "Save (POST)"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={card.saving}
-                    onClick={() => deleteCard(card.localId)}
-                  >
-                    Delete
-                  </button>
+        {activeQuiz && (
+          <section className="grid gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-headline m-0">
+                Questions ({cards.length})
+              </h2>
+              <Button type="button" variant="secondary" onClick={addQuestionCard}>
+                Add question
+              </Button>
+            </div>
+
+            {cards.length === 0 && (
+              <EmptyState
+                title="No questions yet"
+                description="Add a question card to start building this quiz."
+                action={
+                  <Button type="button" variant="accent" onClick={addQuestionCard}>
+                    Add question
+                  </Button>
+                }
+              />
+            )}
+
+            {cards.map((card, index) => (
+              <Card key={card.localId} className="grid gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <strong className="text-subhead font-medium">
+                      Card {index + 1}
+                    </strong>
+                    <Badge tone="neutral">pos {card.question.position}</Badge>
+                    <Badge tone={card.serverId ? "sage" : "phase"}>
+                      {card.serverId ? "saved" : "new"}
+                    </Badge>
+                    {card.dirty && <Badge tone="phase">unsaved</Badge>}
+                    {card.saving && <Badge tone="phase">saving…</Badge>}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={card.saving}
+                      onClick={() => void saveCard(card.localId)}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="tertiary"
+                      size="sm"
+                      disabled={card.saving}
+                      onClick={() => void deleteCard(card.localId)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              {card.error && (
-                <p style={{ color: "crimson", whiteSpace: "pre-wrap" }}>
-                  {card.error}
-                </p>
-              )}
+                {card.error && (
+                  <p className="text-body-sm m-0 whitespace-pre-wrap text-semantic-error">
+                    {card.error}
+                  </p>
+                )}
 
-              <label style={labelStyle}>
-                Question description
-                <textarea
-                  value={card.question.questionDescription}
-                  rows={2}
-                  onChange={(e) =>
-                    updateCard(card.localId, (c) => ({
-                      ...c,
-                      question: {
-                        ...c.question,
-                        questionDescription: e.target.value,
-                      },
-                    }))
-                  }
-                />
-              </label>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                  gap: 12,
-                }}
-              >
-                <label style={labelStyle}>
-                  Type
-                  <select
-                    value={card.question.questionType}
-                    onChange={(e) => {
-                      const questionType = e.target.value as QuestionType;
-                      updateCard(card.localId, (c) => ({
-                        ...c,
-                        question: { ...c.question, questionType },
-                        options:
-                          questionType === "TRUE_FALSE"
-                            ? trueFalseOptions()
-                            : c.question.questionType === "TRUE_FALSE"
-                              ? defaultMcqOptions()
-                              : c.options,
-                      }));
-                    }}
-                  >
-                    <option value="MCQ">MCQ</option>
-                    <option value="MSQ">MSQ</option>
-                    <option value="TRUE_FALSE">TRUE_FALSE</option>
-                  </select>
-                </label>
-
-                <label style={labelStyle}>
-                  Analytics
-                  <select
-                    value={card.question.analyticsType}
+                <label className={labelClass}>
+                  Question description
+                  <textarea
+                    value={card.question.questionDescription}
+                    rows={2}
+                    className={fieldClass}
                     onChange={(e) =>
                       updateCard(card.localId, (c) => ({
                         ...c,
                         question: {
                           ...c.question,
-                          analyticsType: e.target.value as AnalyticsType,
-                        },
-                      }))
-                    }
-                  >
-                    <option value="BARCHART">BARCHART</option>
-                    <option value="PIE_CHART">PIE_CHART</option>
-                    <option value="DONUT_CHART">DONUT_CHART</option>
-                  </select>
-                </label>
-
-                <label style={labelStyle}>
-                  Score
-                  <select
-                    value={card.question.score}
-                    onChange={(e) =>
-                      updateCard(card.localId, (c) => ({
-                        ...c,
-                        question: {
-                          ...c.question,
-                          score: Number(e.target.value),
-                        },
-                      }))
-                    }
-                  >
-                    {[1000, 2000, 3000, 4000, 5000].map((value) => (
-                      <option key={value} value={value}>
-                        {value}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label style={labelStyle}>
-                  Duration (seconds)
-                  <input
-                    type="number"
-                    min={10}
-                    max={180}
-                    value={card.question.durationMs / 1000}
-                    onChange={(e) =>
-                      updateCard(card.localId, (c) => ({
-                        ...c,
-                        question: {
-                          ...c.question,
-                          durationMs: Number(e.target.value) * 1000,
+                          questionDescription: e.target.value,
                         },
                       }))
                     }
                   />
                 </label>
-              </div>
 
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: 8,
-                  }}
-                >
-                  <h3 style={{ margin: 0 }}>Options</h3>
-                  {card.question.questionType !== "TRUE_FALSE" &&
-                    card.options.length < 4 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateCard(card.localId, (c) => ({
-                            ...c,
-                            options: [
-                              ...c.options,
-                              {
-                                optionDescription: "New option text",
-                                optImgLink: "",
-                                optionNature: "WRONG",
-                              },
-                            ],
-                          }))
-                        }
-                      >
-                        Add option
-                      </button>
-                    )}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <label className={labelClass}>
+                    Type
+                    <select
+                      value={card.question.questionType}
+                      className={fieldClass}
+                      onChange={(e) => {
+                        const questionType = e.target.value as QuestionType;
+                        updateCard(card.localId, (c) => ({
+                          ...c,
+                          question: { ...c.question, questionType },
+                          options:
+                            questionType === "TRUE_FALSE"
+                              ? trueFalseOptions()
+                              : c.question.questionType === "TRUE_FALSE"
+                                ? defaultMcqOptions()
+                                : c.options,
+                        }));
+                      }}
+                    >
+                      <option value="MCQ">MCQ</option>
+                      <option value="MSQ">MSQ</option>
+                      <option value="TRUE_FALSE">TRUE_FALSE</option>
+                    </select>
+                  </label>
+
+                  <label className={labelClass}>
+                    Analytics
+                    <select
+                      value={card.question.analyticsType}
+                      className={fieldClass}
+                      onChange={(e) =>
+                        updateCard(card.localId, (c) => ({
+                          ...c,
+                          question: {
+                            ...c.question,
+                            analyticsType: e.target.value as AnalyticsType,
+                          },
+                        }))
+                      }
+                    >
+                      <option value="BARCHART">BARCHART</option>
+                      <option value="PIE_CHART">PIE_CHART</option>
+                      <option value="DONUT_CHART">DONUT_CHART</option>
+                    </select>
+                  </label>
+
+                  <label className={labelClass}>
+                    Score
+                    <select
+                      value={card.question.score}
+                      className={fieldClass}
+                      onChange={(e) =>
+                        updateCard(card.localId, (c) => ({
+                          ...c,
+                          question: {
+                            ...c.question,
+                            score: Number(e.target.value),
+                          },
+                        }))
+                      }
+                    >
+                      {[1000, 2000, 3000, 4000, 5000].map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className={labelClass}>
+                    Duration (seconds)
+                    <input
+                      type="number"
+                      min={10}
+                      max={180}
+                      value={card.question.durationMs / 1000}
+                      className={fieldClass}
+                      onChange={(e) =>
+                        updateCard(card.localId, (c) => ({
+                          ...c,
+                          question: {
+                            ...c.question,
+                            durationMs: Number(e.target.value) * 1000,
+                          },
+                        }))
+                      }
+                    />
+                  </label>
                 </div>
 
-                {card.options.map((option, optionIndex) => (
-                  <div
-                    key={optionIndex}
-                    style={{
-                      border: "1px solid #ccc",
-                      padding: 12,
-                      marginBottom: 8,
-                      display: "grid",
-                      gap: 8,
-                    }}
-                  >
-                    <label style={labelStyle}>
-                      Description
-                      <input
+                <div className="grid gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-body m-0 font-medium">Options</h3>
+                    {card.question.questionType !== "TRUE_FALSE" &&
+                      card.options.length < 4 && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() =>
+                            updateCard(card.localId, (c) => ({
+                              ...c,
+                              options: [
+                                ...c.options,
+                                {
+                                  optionDescription: "New option text",
+                                  optImgLink: "",
+                                  optionNature: "WRONG",
+                                },
+                              ],
+                            }))
+                          }
+                        >
+                          Add option
+                        </Button>
+                      )}
+                  </div>
+
+                  {card.options.map((option, optionIndex) => (
+                    <div
+                      key={optionIndex}
+                      className="grid gap-3 rounded-md border border-hairline bg-canvas p-4"
+                    >
+                      <Input
+                        label="Description"
                         value={option.optionDescription}
                         disabled={card.question.questionType === "TRUE_FALSE"}
                         onChange={(e) =>
@@ -880,81 +825,68 @@ export default function CreateQuizTestPage() {
                           }))
                         }
                       />
-                    </label>
-                    <label style={labelStyle}>
-                      Nature
-                      <select
-                        value={option.optionNature}
-                        onChange={(e) =>
-                          updateCard(card.localId, (c) => ({
-                            ...c,
-                            options: c.options.map((opt, i) =>
-                              i === optionIndex
-                                ? {
-                                    ...opt,
-                                    optionNature: e.target
-                                      .value as OptionNature,
-                                  }
-                                : opt,
-                            ),
-                          }))
-                        }
-                      >
-                        <option value="CORRECT">CORRECT</option>
-                        <option value="WRONG">WRONG</option>
-                      </select>
-                    </label>
-                    {card.question.questionType !== "TRUE_FALSE" &&
-                      card.options.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={() =>
+                      <label className={labelClass}>
+                        Nature
+                        <select
+                          value={option.optionNature}
+                          className={fieldClass}
+                          onChange={(e) =>
                             updateCard(card.localId, (c) => ({
                               ...c,
-                              options: c.options.filter(
-                                (_, i) => i !== optionIndex,
+                              options: c.options.map((opt, i) =>
+                                i === optionIndex
+                                  ? {
+                                      ...opt,
+                                      optionNature: e.target
+                                        .value as OptionNature,
+                                    }
+                                  : opt,
                               ),
                             }))
                           }
                         >
-                          Remove option
-                        </button>
-                      )}
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
+                          <option value="CORRECT">CORRECT</option>
+                          <option value="WRONG">WRONG</option>
+                        </select>
+                      </label>
+                      {card.question.questionType !== "TRUE_FALSE" &&
+                        card.options.length > 2 && (
+                          <Button
+                            type="button"
+                            variant="tertiary"
+                            size="sm"
+                            className="w-fit"
+                            onClick={() =>
+                              updateCard(card.localId, (c) => ({
+                                ...c,
+                                options: c.options.filter(
+                                  (_, i) => i !== optionIndex,
+                                ),
+                              }))
+                            }
+                          >
+                            Remove option
+                          </Button>
+                        )}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ))}
 
-          {cards.length > 0 && (
-            <button type="button" onClick={addQuestionCard}>
-              Add question
-            </button>
-          )}
-        </section>
-      )}
-    </main>
+            {cards.length > 0 && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={addQuestionCard}
+                className="w-fit"
+              >
+                Add question
+              </Button>
+            )}
+          </section>
+        )}
+      </main>
+    </div>
   );
 }
-
-const pageStyle: CSSProperties = {
-  maxWidth: 900,
-  margin: "0 auto",
-  padding: 24,
-  display: "grid",
-  gap: 20,
-  fontFamily: "ui-sans-serif, system-ui, sans-serif",
-};
-
-const cardStyle: CSSProperties = {
-  border: "1px solid #ddd",
-  borderRadius: 8,
-  padding: 16,
-  display: "grid",
-  gap: 12,
-};
-
-const labelStyle: CSSProperties = {
-  display: "grid",
-  gap: 4,
-};

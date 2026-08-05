@@ -1,10 +1,11 @@
 "use client";
 
-import { type CSSProperties, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { AppNav, appShellVars } from "@/components/app-nav";
+import { Badge, Card, EmptyState, Eyebrow } from "@/components/ui";
 
 type ConductedRow = {
   id: string;
@@ -14,6 +15,9 @@ type ConductedRow = {
   participantCount: number;
   quiz: { id: string; name: string };
 };
+
+const linkBtn =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-[18px] py-2.5 text-button no-underline transition-colors select-none";
 
 export default function ConductedQuizzesPage() {
   const router = useRouter();
@@ -51,69 +55,98 @@ export default function ConductedQuizzesPage() {
   }, [isPending, session, router, load]);
 
   if (isPending || (loading && !session)) {
-    return <main style={appShellVars}>Loading…</main>;
+    return (
+      <main style={appShellVars} className="flex items-center justify-center p-8">
+        <p className="text-body text-ink-muted m-0">Loading…</p>
+      </main>
+    );
   }
 
   if (!session) {
-    return <main style={appShellVars}>Redirecting to login…</main>;
+    return (
+      <main style={appShellVars} className="flex items-center justify-center p-8">
+        <p className="text-body text-ink-muted m-0">Redirecting to login…</p>
+      </main>
+    );
   }
 
   return (
     <div style={appShellVars}>
       <AppNav />
-      <main style={main}>
-        <header style={pageHead}>
-          <h1 style={title}>Conducted quizzes</h1>
-          <p style={sub}>
+      <main className="mx-auto grid max-w-[900px] gap-6 px-6 pb-24 pt-12">
+        <header className="grid gap-2">
+          <Eyebrow>History</Eyebrow>
+          <h1 className="text-display-md m-0 text-ink">Conducted quizzes</h1>
+          <p className="text-body m-0 text-ink-muted">
             Live sessions you’ve hosted from your quiz templates.
           </p>
         </header>
 
-        {error && <p style={errorText}>{error}</p>}
+        {error && (
+          <p className="text-body-sm m-0 text-semantic-error" role="alert">
+            {error}
+          </p>
+        )}
 
         {loading ? (
-          <p style={muted}>Loading…</p>
+          <p className="text-body-sm m-0 text-ink-muted">Loading…</p>
         ) : rows.length === 0 ? (
-          <div style={emptyCard}>
-            <p style={{ margin: 0 }}>
-              You haven’t hosted a session yet.{" "}
-              <Link href="/quizzes" style={inlineLink}>
-                Start a waiting room
-              </Link>{" "}
-              from one of your quizzes.
-            </p>
-          </div>
+          <EmptyState
+            title="No sessions hosted yet"
+            description="Start a waiting room from one of your quiz templates."
+            action={
+              <Link
+                href="/quizzes"
+                className={`${linkBtn} bg-sage text-on-primary hover:opacity-90`}
+              >
+                Begin from quizzes
+              </Link>
+            }
+          />
         ) : (
-          <ul style={list}>
+          <ul className="m-0 grid list-none gap-3 p-0">
             {rows.map((s) => (
-              <li key={s.id} style={row}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <strong style={rowTitle}>{s.quiz.name}</strong>
-                  <p style={rowMeta}>
-                    Code <code>{s.sessionCode}</code> · {s.state.toLowerCase()} ·{" "}
-                    {s.participantCount} players ·{" "}
-                    {new Date(s.conductedAt).toLocaleString()}
-                  </p>
-                </div>
-                {s.state === "FINISHED" ? (
-                  <Link href={`/result/${s.sessionCode}`} style={btnSecondary}>
-                    Results
-                  </Link>
-                ) : s.state === "INACTIVE" ? (
-                  <Link
-                    href={`/join-quiz/${s.sessionCode}/host`}
-                    style={btnSecondary}
-                  >
-                    Waiting room
-                  </Link>
-                ) : (
-                  <Link
-                    href={`/quiz/${s.sessionCode}/host`}
-                    style={btnSecondary}
-                  >
-                    Resume host
-                  </Link>
-                )}
+              <li key={s.id}>
+                <Card
+                  padding="md"
+                  className="flex flex-wrap items-center justify-between gap-4"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <strong className="text-subhead font-medium">
+                        {s.quiz.name}
+                      </strong>
+                      <Badge tone="phase">{s.state.toLowerCase()}</Badge>
+                    </div>
+                    <p className="text-caption mt-1 mb-0 text-ink-muted">
+                      Code <code className="text-mono">{s.sessionCode}</code> ·{" "}
+                      {s.participantCount} players ·{" "}
+                      {new Date(s.conductedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  {s.state === "FINISHED" ? (
+                    <Link
+                      href={`/result/${s.sessionCode}`}
+                      className={`${linkBtn} border border-hairline bg-surface-1 text-ink hover:bg-surface-2`}
+                    >
+                      Results
+                    </Link>
+                  ) : s.state === "INACTIVE" ? (
+                    <Link
+                      href={`/join-quiz/${s.sessionCode}/host`}
+                      className={`${linkBtn} border border-hairline bg-surface-1 text-ink hover:bg-surface-2`}
+                    >
+                      Waiting room
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/quiz/${s.sessionCode}/host`}
+                      className={`${linkBtn} border border-hairline bg-surface-1 text-ink hover:bg-surface-2`}
+                    >
+                      Resume host
+                    </Link>
+                  )}
+                </Card>
               </li>
             ))}
           </ul>
@@ -122,84 +155,3 @@ export default function ConductedQuizzesPage() {
     </div>
   );
 }
-
-const main: CSSProperties = {
-  maxWidth: 900,
-  margin: "0 auto",
-  padding: "48px 24px 96px",
-  display: "grid",
-  gap: 24,
-};
-
-const pageHead: CSSProperties = { display: "grid", gap: 8 };
-
-const title: CSSProperties = {
-  margin: 0,
-  fontSize: 40,
-  fontWeight: 500,
-  letterSpacing: "-0.8px",
-  lineHeight: 1.15,
-};
-
-const sub: CSSProperties = {
-  margin: 0,
-  fontSize: 16,
-  lineHeight: 1.5,
-  color: "var(--ink-muted)",
-};
-
-const list: CSSProperties = {
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-  display: "grid",
-  gap: 12,
-};
-
-const row: CSSProperties = {
-  background: "var(--surface)",
-  border: "1px solid var(--hairline)",
-  borderRadius: 12,
-  padding: 16,
-  display: "flex",
-  gap: 16,
-  alignItems: "center",
-  justifyContent: "space-between",
-  flexWrap: "wrap",
-};
-
-const rowTitle: CSSProperties = { fontSize: 18, fontWeight: 500 };
-
-const rowMeta: CSSProperties = {
-  margin: "4px 0 0",
-  fontSize: 13,
-  color: "var(--ink-muted)",
-};
-
-const emptyCard: CSSProperties = {
-  background: "var(--surface)",
-  border: "1px solid var(--hairline)",
-  borderRadius: 12,
-  padding: 24,
-  color: "var(--ink-muted)",
-  fontSize: 15,
-};
-
-const muted: CSSProperties = { margin: 0, color: "var(--ink-muted)" };
-const errorText: CSSProperties = { margin: 0, color: "#c41c1c" };
-const inlineLink: CSSProperties = { color: "var(--ink)", fontWeight: 500 };
-
-const btnSecondary: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  fontFamily: "inherit",
-  fontSize: 15,
-  fontWeight: 500,
-  padding: "10px 18px",
-  borderRadius: 8,
-  border: "1px solid var(--hairline)",
-  background: "var(--surface)",
-  color: "var(--ink)",
-  textDecoration: "none",
-  whiteSpace: "nowrap",
-};

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  type CSSProperties,
   type FormEvent,
   useCallback,
   useEffect,
@@ -15,6 +14,14 @@ import {
   OnboardingWalkthrough,
   shouldShowOnboarding,
 } from "@/components/onboarding-walkthrough";
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Eyebrow,
+  Input,
+} from "@/components/ui";
 
 type QuizRow = {
   id: string;
@@ -46,6 +53,9 @@ type ConductedRow = {
   participantCount: number;
   quiz: { id: string; name: string };
 };
+
+const linkBtn =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-[18px] py-2.5 text-button no-underline transition-colors select-none";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -155,11 +165,19 @@ export default function DashboardPage() {
   }
 
   if (isPending || (loading && !session)) {
-    return <main style={appShellVars}>Loading…</main>;
+    return (
+      <main style={appShellVars} className="flex items-center justify-center p-8">
+        <p className="text-body text-ink-muted m-0">Loading…</p>
+      </main>
+    );
   }
 
   if (!session) {
-    return <main style={appShellVars}>Redirecting to login…</main>;
+    return (
+      <main style={appShellVars} className="flex items-center justify-center p-8">
+        <p className="text-body text-ink-muted m-0">Redirecting to login…</p>
+      </main>
+    );
   }
 
   const firstName = session.user.name?.split(" ")[0] || "there";
@@ -170,243 +188,299 @@ export default function DashboardPage() {
 
       <AppNav onTour={() => setTourOpen(true)} onSignOut={() => void signOut()} />
 
-      <main style={main}>
-        <section style={hero}>
-          <h1 style={display}>Welcome, {firstName}</h1>
-          <p style={lead}>
+      <main className="mx-auto grid max-w-[1100px] gap-12 px-6 pb-24 pt-12">
+        <section className="grid max-w-xl gap-3">
+          <Eyebrow>Dashboard</Eyebrow>
+          <h1 className="text-display-md m-0 text-ink">Welcome, {firstName}</h1>
+          <p className="text-body-lg m-0 text-ink-muted">
             Create live quizzes, host sessions, or jump into someone else’s game.
           </p>
         </section>
 
-        <section style={ctaGrid} aria-label="Quick actions">
-          <article style={ctaCard}>
-            <h2 style={cardTitle}>Create a quiz</h2>
-            <p style={cardBody}>
+        <section
+          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          aria-label="Quick actions"
+        >
+          <Card className="flex flex-col gap-3">
+            <h2 className="text-card-title m-0">Create a quiz</h2>
+            <p className="text-body-sm m-0 flex-1 text-ink-muted">
               Build a template with questions, timers, and scoring — then host it live.
             </p>
-            <Link href="/create-quiz" style={btnAccent}>
+            <Link
+              href="/create-quiz"
+              className={`${linkBtn} w-fit bg-sage text-on-primary hover:opacity-90`}
+            >
               Create quiz
             </Link>
-          </article>
+          </Card>
 
-          <article id="join" style={ctaCard}>
-            <h2 style={cardTitle}>Join a quiz</h2>
-            <p style={cardBody}>
+          <Card id="join" className="flex flex-col gap-3 scroll-mt-20">
+            <h2 className="text-card-title m-0">Join a quiz</h2>
+            <p className="text-body-sm m-0 text-ink-muted">
               Enter the 6-character session code from your host.
             </p>
-            <form onSubmit={onJoin} style={inlineForm}>
-              <input
+            <form onSubmit={onJoin} className="mt-1 flex flex-wrap gap-2">
+              <Input
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                 placeholder="Session code"
                 maxLength={6}
                 required
-                style={input}
                 aria-label="Session code"
+                className="min-w-[140px] flex-1"
               />
-              <button
+              <Button
                 type="submit"
-                style={btnPrimary}
+                variant="accent"
                 disabled={joinCode.trim().length < 4}
               >
                 Join
-              </button>
+              </Button>
             </form>
-          </article>
+          </Card>
 
-          <article style={ctaCard}>
-            <h2 style={cardTitle}>Import a template</h2>
-            <p style={cardBody}>
+          <Card className="flex flex-col gap-3">
+            <h2 className="text-card-title m-0">Import a template</h2>
+            <p className="text-body-sm m-0 text-ink-muted">
               Paste a quiz sharing code to clone it into your account.
             </p>
-            <form onSubmit={onImport} style={inlineForm}>
-              <input
+            <form onSubmit={onImport} className="mt-1 flex flex-wrap gap-2">
+              <Input
                 value={importCode}
                 onChange={(e) => setImportCode(e.target.value.toUpperCase())}
                 placeholder="Share code"
                 maxLength={6}
                 required
-                style={input}
                 aria-label="Quiz sharing code"
+                className="min-w-[140px] flex-1"
               />
-              <button
+              <Button
                 type="submit"
-                style={btnSecondary}
+                variant="secondary"
                 disabled={importing || importCode.trim().length < 6}
               >
                 {importing ? "…" : "Import"}
-              </button>
+              </Button>
             </form>
-          </article>
+          </Card>
         </section>
 
-        {error && <p style={errorText}>{error}</p>}
-        {status && <p style={statusText}>{status}</p>}
+        {error && (
+          <p className="text-body-sm m-0 text-semantic-error" role="alert">
+            {error}
+          </p>
+        )}
+        {status && (
+          <p className="text-body-sm m-0 text-sage">{status}</p>
+        )}
 
-        <section id="quizzes" style={section}>
-          <div style={sectionHead}>
+        <section id="quizzes" className="grid scroll-mt-20 gap-4">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h2 style={sectionTitle}>Your quiz templates</h2>
-              <p style={sectionSub}>Quizzes you’ve created — start a waiting room anytime.</p>
+              <h2 className="text-headline m-0">Your quiz templates</h2>
+              <p className="text-body-sm mt-1 mb-0 text-ink-muted">
+                Quizzes you’ve created — start a waiting room anytime.
+              </p>
             </div>
-            <Link href="/quizzes" style={textLink}>
+            <Link
+              href="/quizzes"
+              className="text-body-sm font-medium text-ink no-underline hover:text-ink-muted"
+            >
               View all
             </Link>
           </div>
 
           {loading ? (
-            <p style={muted}>Loading…</p>
+            <p className="text-body-sm m-0 text-ink-muted">Loading…</p>
           ) : quizzes.length === 0 ? (
-            <div style={emptyCard}>
-              <p style={{ margin: 0 }}>
-                No templates yet.{" "}
-                <Link href="/create-quiz" style={inlineLink}>
-                  Create your first quiz
-                </Link>{" "}
-                or import a sharing code above.
-              </p>
-            </div>
+            <EmptyState
+              title="No templates yet"
+              description="Create your first quiz or import a sharing code above."
+              action={
+                <Link
+                  href="/create-quiz"
+                  className={`${linkBtn} bg-sage text-on-primary hover:opacity-90`}
+                >
+                  Create quiz
+                </Link>
+              }
+            />
           ) : (
-            <ul style={list}>
+            <ul className="m-0 grid list-none gap-3 p-0">
               {quizzes.slice(0, 6).map((quiz) => (
-                <li key={quiz.id} style={row}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <strong style={rowTitle}>{quiz.name}</strong>
-                    {quiz.description && (
-                      <p style={rowMeta}>{quiz.description}</p>
-                    )}
-                    <p style={rowMeta}>
-                      {quiz._count.questions} questions · {quiz._count.sessions}{" "}
-                      sessions · share <code>{quiz.quizSharingCode}</code>
-                      {" · "}
-                      <Link href={`/share-quiz/${quiz.quizSharingCode}`} style={inlineLink}>
-                        share
-                      </Link>
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    style={btnPrimary}
-                    disabled={
-                      startingId === quiz.id || quiz._count.questions === 0
-                    }
-                    onClick={() => void startWaitingRoom(quiz.id)}
-                    title={
-                      quiz._count.questions === 0
-                        ? "Add questions before starting"
-                        : "Open host waiting room"
-                    }
-                  >
-                    {startingId === quiz.id ? "Starting…" : "Host"}
-                  </button>
+                <li key={quiz.id}>
+                  <Card padding="md" className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <strong className="text-subhead font-medium">{quiz.name}</strong>
+                      {quiz.description && (
+                        <p className="text-body-sm mt-1 mb-0 text-ink-muted">
+                          {quiz.description}
+                        </p>
+                      )}
+                      <p className="text-caption mt-1 mb-0 text-ink-muted">
+                        {quiz._count.questions} questions · {quiz._count.sessions}{" "}
+                        sessions · share{" "}
+                        <code className="text-mono">{quiz.quizSharingCode}</code>
+                        {" · "}
+                        <Link
+                          href={`/share-quiz/${quiz.quizSharingCode}`}
+                          className="font-medium text-ink"
+                        >
+                          share
+                        </Link>
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="accent"
+                      disabled={
+                        startingId === quiz.id || quiz._count.questions === 0
+                      }
+                      onClick={() => void startWaitingRoom(quiz.id)}
+                      title={
+                        quiz._count.questions === 0
+                          ? "Add questions before starting"
+                          : "Open host waiting room"
+                      }
+                    >
+                      {startingId === quiz.id ? "Starting…" : "Begin"}
+                    </Button>
+                  </Card>
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        <section id="conducted" style={section}>
-          <div style={sectionHead}>
+        <section id="conducted" className="grid scroll-mt-20 gap-4">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h2 style={sectionTitle}>Conducted quizzes</h2>
-              <p style={sectionSub}>Live sessions you’ve hosted.</p>
+              <h2 className="text-headline m-0">Conducted quizzes</h2>
+              <p className="text-body-sm mt-1 mb-0 text-ink-muted">
+                Live sessions you’ve hosted.
+              </p>
             </div>
-            <Link href="/conducted-quizzes" style={textLink}>
+            <Link
+              href="/conducted-quizzes"
+              className="text-body-sm font-medium text-ink no-underline hover:text-ink-muted"
+            >
               View all
             </Link>
           </div>
 
           {loading ? (
-            <p style={muted}>Loading…</p>
+            <p className="text-body-sm m-0 text-ink-muted">Loading…</p>
           ) : conducted.length === 0 ? (
-            <div style={emptyCard}>
-              <p style={{ margin: 0 }}>
-                You haven’t hosted a session yet. Start one from a template above.
-              </p>
-            </div>
+            <EmptyState
+              title="No sessions hosted yet"
+              description="Start one from a template above when you’re ready to go live."
+            />
           ) : (
-            <ul style={list}>
+            <ul className="m-0 grid list-none gap-3 p-0">
               {conducted.slice(0, 8).map((s) => (
-                <li key={s.id} style={row}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <strong style={rowTitle}>{s.quiz.name}</strong>
-                    <p style={rowMeta}>
-                      Code <code>{s.sessionCode}</code> · {s.state.toLowerCase()} ·{" "}
-                      {s.participantCount} players ·{" "}
-                      {new Date(s.conductedAt).toLocaleString()}
-                    </p>
-                  </div>
-                  {s.state === "FINISHED" ? (
-                    <Link href={`/result/${s.sessionCode}`} style={btnSecondary}>
-                      Results
-                    </Link>
-                  ) : s.state === "INACTIVE" ? (
-                    <Link
-                      href={`/join-quiz/${s.sessionCode}/host`}
-                      style={btnSecondary}
-                    >
-                      Waiting room
-                    </Link>
-                  ) : (
-                    <Link href={`/quiz/${s.sessionCode}/host`} style={btnSecondary}>
-                      Resume host
-                    </Link>
-                  )}
+                <li key={s.id}>
+                  <Card padding="md" className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <strong className="text-subhead font-medium">{s.quiz.name}</strong>
+                        <Badge tone="phase">{s.state.toLowerCase()}</Badge>
+                      </div>
+                      <p className="text-caption mt-1 mb-0 text-ink-muted">
+                        Code <code className="text-mono">{s.sessionCode}</code> ·{" "}
+                        {s.participantCount} players ·{" "}
+                        {new Date(s.conductedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    {s.state === "FINISHED" ? (
+                      <Link
+                        href={`/result/${s.sessionCode}`}
+                        className={`${linkBtn} border border-hairline bg-surface-1 text-ink hover:bg-surface-2`}
+                      >
+                        Results
+                      </Link>
+                    ) : s.state === "INACTIVE" ? (
+                      <Link
+                        href={`/join-quiz/${s.sessionCode}/host`}
+                        className={`${linkBtn} border border-hairline bg-surface-1 text-ink hover:bg-surface-2`}
+                      >
+                        Waiting room
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/quiz/${s.sessionCode}/host`}
+                        className={`${linkBtn} border border-hairline bg-surface-1 text-ink hover:bg-surface-2`}
+                      >
+                        Resume host
+                      </Link>
+                    )}
+                  </Card>
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        <section id="participated" style={section}>
-          <div style={sectionHead}>
+        <section id="participated" className="grid scroll-mt-20 gap-4">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h2 style={sectionTitle}>Participated quizzes</h2>
-              <p style={sectionSub}>
+              <h2 className="text-headline m-0">Participated quizzes</h2>
+              <p className="text-body-sm mt-1 mb-0 text-ink-muted">
                 Sessions you joined while signed in.
               </p>
             </div>
-            <Link href="/participated-quizzes" style={textLink}>
+            <Link
+              href="/participated-quizzes"
+              className="text-body-sm font-medium text-ink no-underline hover:text-ink-muted"
+            >
               View all
             </Link>
           </div>
 
           {loading ? (
-            <p style={muted}>Loading…</p>
+            <p className="text-body-sm m-0 text-ink-muted">Loading…</p>
           ) : participated.length === 0 ? (
-            <div style={emptyCard}>
-              <p style={{ margin: 0 }}>
-                No participations yet. Use Join quiz when someone shares a session
-                code.
-              </p>
-            </div>
+            <EmptyState
+              title="No participations yet"
+              description="Use Join quiz when someone shares a session code."
+              action={
+                <Link
+                  href="/dashboard#join"
+                  className={`${linkBtn} bg-sage text-on-primary hover:opacity-90`}
+                >
+                  Join
+                </Link>
+              }
+            />
           ) : (
-            <ul style={list}>
+            <ul className="m-0 grid list-none gap-3 p-0">
               {participated.slice(0, 8).map((p) => (
-                <li key={p.id} style={row}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <strong style={rowTitle}>{p.quiz.name}</strong>
-                    <p style={rowMeta}>
-                      As {p.participantName} · score {p.totalScore} ·{" "}
-                      <code>{p.session.sessionCode}</code> ·{" "}
-                      {p.session.state.toLowerCase()}
-                    </p>
-                  </div>
-                  {p.session.state === "FINISHED" ? (
-                    <Link
-                      href={`/result/${p.session.sessionCode}`}
-                      style={btnSecondary}
-                    >
-                      Results
-                    </Link>
-                  ) : (
-                    <Link
-                      href={`/join-quiz/${p.session.sessionCode}`}
-                      style={btnSecondary}
-                    >
-                      Open
-                    </Link>
-                  )}
+                <li key={p.id}>
+                  <Card padding="md" className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <strong className="text-subhead font-medium">{p.quiz.name}</strong>
+                      <p className="text-caption mt-1 mb-0 text-ink-muted">
+                        As {p.participantName} · score{" "}
+                        <span className="text-mono">{p.totalScore}</span> ·{" "}
+                        <code className="text-mono">{p.session.sessionCode}</code> ·{" "}
+                        {p.session.state.toLowerCase()}
+                      </p>
+                    </div>
+                    {p.session.state === "FINISHED" ? (
+                      <Link
+                        href={`/result/${p.session.sessionCode}`}
+                        className={`${linkBtn} border border-hairline bg-surface-1 text-ink hover:bg-surface-2`}
+                      >
+                        Results
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/join-quiz/${p.session.sessionCode}`}
+                        className={`${linkBtn} border border-hairline bg-surface-1 text-ink hover:bg-surface-2`}
+                      >
+                        Open
+                      </Link>
+                    )}
+                  </Card>
                 </li>
               ))}
             </ul>
@@ -416,205 +490,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-const textLink: CSSProperties = {
-  fontSize: 14,
-  fontWeight: 500,
-  color: "var(--ink)",
-  textDecoration: "none",
-};
-
-const main: CSSProperties = {
-  maxWidth: 1100,
-  margin: "0 auto",
-  padding: "48px 24px 96px",
-  display: "grid",
-  gap: 48,
-};
-
-const hero: CSSProperties = {
-  display: "grid",
-  gap: 12,
-  maxWidth: 640,
-};
-
-const display: CSSProperties = {
-  margin: 0,
-  fontSize: 40,
-  fontWeight: 500,
-  letterSpacing: "-0.8px",
-  lineHeight: 1.15,
-};
-
-const lead: CSSProperties = {
-  margin: 0,
-  fontSize: 18,
-  lineHeight: 1.5,
-  color: "var(--ink-muted)",
-};
-
-const ctaGrid: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-  gap: 16,
-};
-
-const ctaCard: CSSProperties = {
-  background: "var(--surface)",
-  border: "1px solid var(--hairline)",
-  borderRadius: 12,
-  padding: 24,
-  display: "grid",
-  gap: 12,
-  alignContent: "start",
-};
-
-const cardTitle: CSSProperties = {
-  margin: 0,
-  fontSize: 22,
-  fontWeight: 500,
-  letterSpacing: "-0.3px",
-};
-
-const cardBody: CSSProperties = {
-  margin: 0,
-  fontSize: 14,
-  lineHeight: 1.5,
-  color: "var(--ink-muted)",
-};
-
-const inlineForm: CSSProperties = {
-  display: "flex",
-  gap: 8,
-  flexWrap: "wrap",
-  marginTop: 4,
-};
-
-const input: CSSProperties = {
-  flex: 1,
-  minWidth: 120,
-  padding: "10px 14px",
-  borderRadius: 8,
-  border: "1px solid var(--hairline)",
-  fontSize: 16,
-  fontFamily: "inherit",
-  letterSpacing: 1,
-  background: "var(--surface)",
-  color: "var(--ink)",
-};
-
-const btnBase: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontFamily: "inherit",
-  fontSize: 15,
-  fontWeight: 500,
-  lineHeight: 1.2,
-  padding: "10px 18px",
-  borderRadius: 8,
-  border: "1px solid transparent",
-  cursor: "pointer",
-  textDecoration: "none",
-  whiteSpace: "nowrap",
-};
-
-const btnPrimary: CSSProperties = {
-  ...btnBase,
-  background: "var(--ink)",
-  color: "#fff",
-};
-
-const btnAccent: CSSProperties = {
-  ...btnBase,
-  background: "var(--sage)",
-  color: "#fff",
-  width: "fit-content",
-};
-
-const btnSecondary: CSSProperties = {
-  ...btnBase,
-  background: "var(--surface)",
-  color: "var(--ink)",
-  borderColor: "var(--hairline)",
-};
-
-const section: CSSProperties = {
-  display: "grid",
-  gap: 16,
-  scrollMarginTop: 72,
-};
-
-const sectionHead: CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "flex-end",
-  gap: 16,
-  flexWrap: "wrap",
-};
-
-const sectionTitle: CSSProperties = {
-  margin: 0,
-  fontSize: 28,
-  fontWeight: 500,
-  letterSpacing: "-0.5px",
-};
-
-const sectionSub: CSSProperties = {
-  margin: "4px 0 0",
-  fontSize: 14,
-  color: "var(--ink-muted)",
-};
-
-const list: CSSProperties = {
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-  display: "grid",
-  gap: 12,
-};
-
-const row: CSSProperties = {
-  background: "var(--surface)",
-  border: "1px solid var(--hairline)",
-  borderRadius: 12,
-  padding: 16,
-  display: "flex",
-  gap: 16,
-  alignItems: "center",
-  justifyContent: "space-between",
-  flexWrap: "wrap",
-};
-
-const rowTitle: CSSProperties = {
-  fontSize: 18,
-  fontWeight: 500,
-};
-
-const rowMeta: CSSProperties = {
-  margin: "4px 0 0",
-  fontSize: 13,
-  color: "var(--ink-muted)",
-};
-
-const emptyCard: CSSProperties = {
-  background: "var(--surface)",
-  border: "1px solid var(--hairline)",
-  borderRadius: 12,
-  padding: 24,
-  color: "var(--ink-muted)",
-  fontSize: 15,
-};
-
-const muted: CSSProperties = {
-  margin: 0,
-  color: "var(--ink-muted)",
-};
-
-const inlineLink: CSSProperties = {
-  color: "var(--ink)",
-  fontWeight: 500,
-};
-
-const errorText: CSSProperties = { margin: 0, color: "#c41c1c" };
-const statusText: CSSProperties = { margin: 0, color: "var(--sage)" };

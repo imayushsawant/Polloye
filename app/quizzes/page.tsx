@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  type CSSProperties,
   type FormEvent,
   useCallback,
   useEffect,
@@ -11,6 +10,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { AppNav, appShellVars } from "@/components/app-nav";
+import {
+  Button,
+  Card,
+  EmptyState,
+  Eyebrow,
+  Input,
+} from "@/components/ui";
 
 type QuizRow = {
   id: string;
@@ -20,6 +26,9 @@ type QuizRow = {
   createdAt: string;
   _count: { questions: number; sessions: number };
 };
+
+const linkBtn =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-[18px] py-2.5 text-button no-underline transition-colors select-none";
 
 export default function QuizzesPage() {
   const router = useRouter();
@@ -109,116 +118,155 @@ export default function QuizzesPage() {
   }
 
   if (isPending || (loading && !session)) {
-    return <main style={appShellVars}>Loading…</main>;
+    return (
+      <main style={appShellVars} className="flex items-center justify-center p-8">
+        <p className="text-body text-ink-muted m-0">Loading…</p>
+      </main>
+    );
   }
 
   if (!session) {
-    return <main style={appShellVars}>Redirecting to login…</main>;
+    return (
+      <main style={appShellVars} className="flex items-center justify-center p-8">
+        <p className="text-body text-ink-muted m-0">Redirecting to login…</p>
+      </main>
+    );
   }
 
   return (
     <div style={appShellVars}>
       <AppNav />
-      <main style={main}>
-        <header style={pageHead}>
-          <div>
-            <h1 style={title}>My quizzes</h1>
-            <p style={sub}>Templates you’ve created — host a live session anytime.</p>
+      <main className="mx-auto grid max-w-[900px] gap-6 px-6 pb-24 pt-12">
+        <header className="flex flex-wrap items-start justify-between gap-4">
+          <div className="grid gap-2">
+            <Eyebrow>Library</Eyebrow>
+            <h1 className="text-display-md m-0 text-ink">My quizzes</h1>
+            <p className="text-body m-0 text-ink-muted">
+              Templates you’ve created — host a live session anytime.
+            </p>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" style={btnSecondary} onClick={() => setImportOpen((o) => !o)}>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setImportOpen((o) => !o)}
+            >
               Import quiz
-            </button>
-            <Link href="/create-quiz" style={btnAccent}>
+            </Button>
+            <Link
+              href="/create-quiz"
+              className={`${linkBtn} bg-sage text-on-primary hover:opacity-90`}
+            >
               Create quiz
             </Link>
           </div>
         </header>
 
         {importOpen && (
-          <section style={card}>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 500 }}>
-              Import from sharing code
-            </h2>
-            <p style={{ margin: 0, color: "var(--ink-muted)", fontSize: 14 }}>
+          <Card className="grid gap-3">
+            <h2 className="text-subhead m-0 font-medium">Import from sharing code</h2>
+            <p className="text-body-sm m-0 text-ink-muted">
               Paste another user’s 6-character quiz sharing code to clone it into
               your account.
             </p>
-            <form onSubmit={importQuiz} style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <input
+            <form onSubmit={importQuiz} className="flex flex-wrap gap-2">
+              <Input
                 value={importCode}
                 onChange={(e) => setImportCode(e.target.value.toUpperCase())}
                 placeholder="e.g. AB12CD"
                 maxLength={6}
                 required
-                style={input}
+                aria-label="Quiz sharing code"
+                className="min-w-[140px] flex-1"
               />
-              <button
+              <Button
                 type="submit"
-                style={btnPrimary}
+                variant="primary"
                 disabled={importing || importCode.trim().length < 6}
               >
                 {importing ? "Importing…" : "Import"}
-              </button>
-              <button type="button" style={btnSecondary} onClick={() => setImportOpen(false)}>
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setImportOpen(false)}
+              >
                 Cancel
-              </button>
+              </Button>
             </form>
-          </section>
+          </Card>
         )}
 
-        {error && <p style={errorText}>{error}</p>}
-        {status && <p style={statusText}>{status}</p>}
+        {error && (
+          <p className="text-body-sm m-0 text-semantic-error" role="alert">
+            {error}
+          </p>
+        )}
+        {status && <p className="text-body-sm m-0 text-sage">{status}</p>}
 
         {loading ? (
-          <p style={muted}>Loading quizzes…</p>
+          <p className="text-body-sm m-0 text-ink-muted">Loading quizzes…</p>
         ) : quizzes.length === 0 ? (
-          <section style={card}>
-            <p style={{ margin: 0 }}>
-              You haven’t created any quizzes yet.{" "}
-              <Link href="/create-quiz" style={inlineLink}>
-                Create one
-              </Link>{" "}
-              or import a sharing code.
-            </p>
-          </section>
+          <EmptyState
+            title="No quizzes yet"
+            description="Create a template or import a sharing code to get started."
+            action={
+              <Link
+                href="/create-quiz"
+                className={`${linkBtn} bg-sage text-on-primary hover:opacity-90`}
+              >
+                Create quiz
+              </Link>
+            }
+          />
         ) : (
-          <ul style={list}>
+          <ul className="m-0 grid list-none gap-3 p-0">
             {quizzes.map((quiz) => (
-              <li key={quiz.id} style={row}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <strong style={rowTitle}>{quiz.name}</strong>
-                  {quiz.description && (
-                    <p style={rowMeta}>{quiz.description}</p>
-                  )}
-                  <p style={rowMeta}>
-                    {quiz._count.questions} questions · {quiz._count.sessions}{" "}
-                    sessions · share <code>{quiz.quizSharingCode}</code>
-                    {" · "}
-                    <Link href={`/share-quiz/${quiz.quizSharingCode}`} style={inlineLink}>
-                      share link
-                    </Link>
-                    {" · "}
-                    <Link href="/create-quiz" style={inlineLink}>
-                      edit in builder
-                    </Link>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  style={btnPrimary}
-                  disabled={
-                    startingId === quiz.id || quiz._count.questions === 0
-                  }
-                  onClick={() => void startWaitingRoom(quiz.id)}
-                  title={
-                    quiz._count.questions === 0
-                      ? "Add questions before starting"
-                      : "Open host waiting room"
-                  }
+              <li key={quiz.id}>
+                <Card
+                  padding="md"
+                  className="flex flex-wrap items-center justify-between gap-4"
                 >
-                  {startingId === quiz.id ? "Starting…" : "Start waiting room"}
-                </button>
+                  <div className="min-w-0 flex-1">
+                    <strong className="text-subhead font-medium">{quiz.name}</strong>
+                    {quiz.description && (
+                      <p className="text-body-sm mt-1 mb-0 text-ink-muted">
+                        {quiz.description}
+                      </p>
+                    )}
+                    <p className="text-caption mt-1 mb-0 text-ink-muted">
+                      {quiz._count.questions} questions · {quiz._count.sessions}{" "}
+                      sessions · share{" "}
+                      <code className="text-mono">{quiz.quizSharingCode}</code>
+                      {" · "}
+                      <Link
+                        href={`/share-quiz/${quiz.quizSharingCode}`}
+                        className="font-medium text-ink"
+                      >
+                        share link
+                      </Link>
+                      {" · "}
+                      <Link href="/create-quiz" className="font-medium text-ink">
+                        edit in builder
+                      </Link>
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="accent"
+                    disabled={
+                      startingId === quiz.id || quiz._count.questions === 0
+                    }
+                    onClick={() => void startWaitingRoom(quiz.id)}
+                    title={
+                      quiz._count.questions === 0
+                        ? "Add questions before starting"
+                        : "Open host waiting room"
+                    }
+                  >
+                    {startingId === quiz.id ? "Starting…" : "Begin"}
+                  </Button>
+                </Card>
               </li>
             ))}
           </ul>
@@ -227,121 +275,3 @@ export default function QuizzesPage() {
     </div>
   );
 }
-
-const main: CSSProperties = {
-  maxWidth: 900,
-  margin: "0 auto",
-  padding: "48px 24px 96px",
-  display: "grid",
-  gap: 24,
-};
-
-const pageHead: CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  gap: 16,
-  alignItems: "flex-start",
-  flexWrap: "wrap",
-};
-
-const title: CSSProperties = {
-  margin: 0,
-  fontSize: 40,
-  fontWeight: 500,
-  letterSpacing: "-0.8px",
-  lineHeight: 1.15,
-};
-
-const sub: CSSProperties = {
-  margin: "4px 0 0",
-  fontSize: 16,
-  lineHeight: 1.5,
-  color: "var(--ink-muted)",
-};
-
-const card: CSSProperties = {
-  background: "var(--surface)",
-  border: "1px solid var(--hairline)",
-  borderRadius: 12,
-  padding: 16,
-  display: "grid",
-  gap: 12,
-};
-
-const list: CSSProperties = {
-  listStyle: "none",
-  margin: 0,
-  padding: 0,
-  display: "grid",
-  gap: 12,
-};
-
-const row: CSSProperties = {
-  background: "var(--surface)",
-  border: "1px solid var(--hairline)",
-  borderRadius: 12,
-  padding: 16,
-  display: "flex",
-  gap: 16,
-  alignItems: "center",
-  justifyContent: "space-between",
-  flexWrap: "wrap",
-};
-
-const rowTitle: CSSProperties = { fontSize: 18, fontWeight: 500 };
-const rowMeta: CSSProperties = {
-  margin: "4px 0 0",
-  fontSize: 13,
-  color: "var(--ink-muted)",
-};
-
-const input: CSSProperties = {
-  flex: 1,
-  minWidth: 120,
-  padding: "10px 14px",
-  borderRadius: 8,
-  border: "1px solid var(--hairline)",
-  fontSize: 16,
-  fontFamily: "inherit",
-  letterSpacing: 1,
-  background: "var(--surface)",
-};
-
-const btnBase: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontFamily: "inherit",
-  fontSize: 15,
-  fontWeight: 500,
-  padding: "10px 18px",
-  borderRadius: 8,
-  border: "1px solid transparent",
-  cursor: "pointer",
-  textDecoration: "none",
-  whiteSpace: "nowrap",
-};
-
-const btnPrimary: CSSProperties = {
-  ...btnBase,
-  background: "var(--ink)",
-  color: "#fff",
-};
-
-const btnAccent: CSSProperties = {
-  ...btnBase,
-  background: "var(--sage)",
-  color: "#fff",
-};
-
-const btnSecondary: CSSProperties = {
-  ...btnBase,
-  background: "var(--surface)",
-  color: "var(--ink)",
-  borderColor: "var(--hairline)",
-};
-
-const muted: CSSProperties = { margin: 0, color: "var(--ink-muted)" };
-const errorText: CSSProperties = { margin: 0, color: "#c41c1c" };
-const statusText: CSSProperties = { margin: 0, color: "var(--sage)" };
-const inlineLink: CSSProperties = { color: "var(--ink)", fontWeight: 500 };

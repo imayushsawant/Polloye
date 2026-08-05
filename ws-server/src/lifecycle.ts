@@ -78,6 +78,21 @@ function leaderboardPayload(session: LiveSession) {
     .sort((a, b) => b.total_score - a.total_score);
 }
 
+/** 1-based rank from sorted scores; ties keep stable sort order. */
+function rankAndScoreForParticipant(
+  session: LiveSession,
+  participantId: string,
+): { total_score: number; rank: number } {
+  const board = leaderboardPayload(session);
+  const idx = board.findIndex((row) => row.participant_id === participantId);
+  const total_score =
+    session.participants.get(participantId)?.totalScore ?? 0;
+  return {
+    total_score,
+    rank: idx >= 0 ? idx + 1 : board.length + 1,
+  };
+}
+
 async function persistActiveResponses(session: LiveSession) {
   const question = session.questions[session.currentQuestionIndex];
   if (!question) return;
@@ -161,14 +176,20 @@ export async function revealAnswer(io: Server, session: LiveSession) {
     .map((o) => o.id);
 
   // Participants who never submitted get 0 (already implied — no response row yet;
-  // we still emit 0 to their socket)
+  // we still emit 0 to their socket). Include running total_score + 1-based rank.
   for (const [participantId, socketId] of session.participantSockets) {
     const response = session.activeResponses.get(participantId);
     const attainedScore = response?.pointEarned ?? 0;
+    const { total_score, rank } = rankAndScoreForParticipant(
+      session,
+      participantId,
+    );
     io.to(socketId).emit("answer:reveal", {
       question_id: question.id,
       attainedScore,
       option_id: correctOptionIds,
+      total_score,
+      rank,
     });
   }
 
@@ -404,7 +425,10 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
       phase: session.phase,
     });
     emitParticipantCount(io, session);
-    socket.emit("session:state", snapshotState(session));
+    socket.emit(
+      "session:state",
+      snapshotState(session, participantAuth.participantId),
+    );
   }
 
   socket.on("host:showQuestion", async () => {
@@ -593,13 +617,13 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
   });
 }
 
-function snapshotState(session: LiveSession) {
+function snapshotState(session: LiveSession, forParticipantId?: string) {
   const question =
     session.currentQuestionIndex >= 0
       ? session.questions[session.currentQuestionIndex]
       : null;
 
-  return {
+  const base = {
     phase: session.phase,
     session_code: session.sessionCode,
     participant_count: session.participants.size,
@@ -612,5 +636,17 @@ function snapshotState(session: LiveSession) {
       session.phase === "leaderboard" || session.phase === "finished"
         ? leaderboardPayload(session)
         : null,
+  };
+
+  if (!forParticipantId) return base;
+
+  const { total_score, rank } = rankAndScoreForParticipant(
+    session,
+    forParticipantId,
+  );
+  return {
+    ...base,
+    total_score,
+    rank,
   };
 }
