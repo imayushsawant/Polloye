@@ -101,14 +101,12 @@
   --radius-pill: 9999px;
   --radius-full: 9999px;
 
-  --spacing-xxs: var(--space-xxs);
-  --spacing-xs: var(--space-xs);
-  --spacing-sm: var(--space-sm);
-  --spacing-md: var(--space-md);
-  --spacing-lg: var(--space-lg);
-  --spacing-xl: var(--space-xl);
-  --spacing-xxl: var(--space-xxl);
-  --spacing-section: var(--space-section);
+  /*
+   * Do NOT map DESIGN spacing (sm/md/lg/xl) into --spacing-* here.
+   * In Tailwind v4 those keys also generate max-w-sm/md/lg/xl and would
+   * crush container widths (e.g. max-w-xl → 32px). Use --space-* from :root
+   * or default Tailwind spacing (p-4, gap-6, …) instead.
+   */
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;

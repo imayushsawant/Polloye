@@ -2,12 +2,13 @@
 
 import {
   type FormEvent,
+  Suspense,
   useCallback,
   useEffect,
   useState,
 } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { AppNav, appShellVars } from "@/components/app-nav";
 import {
@@ -30,8 +31,10 @@ type QuizRow = {
 const linkBtn =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-[18px] py-2.5 text-button no-underline transition-colors select-none";
 
-export default function QuizzesPage() {
+function QuizzesContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const openId = searchParams.get("open");
   const { data: session, isPending } = authClient.useSession();
 
   const [quizzes, setQuizzes] = useState<QuizRow[]>([]);
@@ -39,6 +42,7 @@ export default function QuizzesPage() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [startingId, setStartingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(openId);
 
   const [importOpen, setImportOpen] = useState(false);
   const [importCode, setImportCode] = useState("");
@@ -70,6 +74,10 @@ export default function QuizzesPage() {
     }
     void loadQuizzes();
   }, [isPending, session, router, loadQuizzes]);
+
+  useEffect(() => {
+    if (openId) setExpandedId(openId);
+  }, [openId]);
 
   async function startWaitingRoom(quizId: string) {
     setError("");
@@ -110,6 +118,7 @@ export default function QuizzesPage() {
       setImportCode("");
       setImportOpen(false);
       await loadQuizzes();
+      setExpandedId(data.quiz.id);
     } catch {
       setError("Import failed");
     } finally {
@@ -120,7 +129,7 @@ export default function QuizzesPage() {
   if (isPending || (loading && !session)) {
     return (
       <main style={appShellVars} className="flex items-center justify-center p-8">
-        <p className="text-body text-ink-muted m-0">Loading…</p>
+        <p className="text-body m-0 text-ink-muted">Loading…</p>
       </main>
     );
   }
@@ -128,10 +137,17 @@ export default function QuizzesPage() {
   if (!session) {
     return (
       <main style={appShellVars} className="flex items-center justify-center p-8">
-        <p className="text-body text-ink-muted m-0">Redirecting to login…</p>
+        <p className="text-body m-0 text-ink-muted">Redirecting to login…</p>
       </main>
     );
   }
+
+  const opened = expandedId
+    ? quizzes.find((q) => q.id === expandedId)
+    : undefined;
+  const rest = expandedId
+    ? quizzes.filter((q) => q.id !== expandedId)
+    : quizzes;
 
   return (
     <div style={appShellVars}>
@@ -164,10 +180,12 @@ export default function QuizzesPage() {
 
         {importOpen && (
           <Card className="grid gap-3">
-            <h2 className="text-subhead m-0 font-medium">Import from sharing code</h2>
+            <h2 className="text-subhead m-0 font-medium">
+              Import from sharing code
+            </h2>
             <p className="text-body-sm m-0 text-ink-muted">
-              Paste another user’s 6-character quiz sharing code to clone it into
-              your account.
+              Paste another user’s 6-character quiz sharing code to clone it
+              into your account.
             </p>
             <form onSubmit={importQuiz} className="flex flex-wrap gap-2">
               <Input
@@ -221,51 +239,84 @@ export default function QuizzesPage() {
           />
         ) : (
           <ul className="m-0 grid list-none gap-3 p-0">
-            {quizzes.map((quiz) => (
-              <li key={quiz.id}>
-                <Card
-                  padding="md"
-                  className="flex flex-wrap items-center justify-between gap-4"
-                >
-                  <div className="min-w-0 flex-1">
-                    <strong className="text-subhead font-medium">{quiz.name}</strong>
-                    {quiz.description && (
-                      <p className="text-body-sm mt-1 mb-0 text-ink-muted">
-                        {quiz.description}
+            {opened && (
+              <li>
+                <Card className="grid gap-4 border-ink">
+                  <div className="grid gap-1">
+                    {openId === opened.id && (
+                      <Eyebrow tone="sage">Just saved</Eyebrow>
+                    )}
+                    <h2 className="text-card-title m-0">{opened.name}</h2>
+                    {opened.description ? (
+                      <p className="text-body m-0 text-ink-muted">
+                        {opened.description}
+                      </p>
+                    ) : (
+                      <p className="text-body-sm m-0 text-ink-tertiary">
+                        No description
                       </p>
                     )}
-                    <p className="text-caption mt-1 mb-0 text-ink-muted">
-                      {quiz._count.questions} questions · {quiz._count.sessions}{" "}
-                      sessions · share{" "}
-                      <code className="text-mono">{quiz.quizSharingCode}</code>
+                    <p className="text-caption m-0 text-ink-muted">
+                      {opened._count.questions}{" "}
+                      {opened._count.questions === 1
+                        ? "question"
+                        : "questions"}
                       {" · "}
-                      <Link
-                        href={`/share-quiz/${quiz.quizSharingCode}`}
-                        className="font-medium text-ink"
-                      >
-                        share link
-                      </Link>
-                      {" · "}
-                      <Link href="/create-quiz" className="font-medium text-ink">
-                        edit in builder
-                      </Link>
+                      {opened._count.sessions}{" "}
+                      {opened._count.sessions === 1 ? "session" : "sessions"}
                     </p>
                   </div>
-                  <Button
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={`/create-quiz?quizId=${opened.id}`}
+                      className={`${linkBtn} border border-hairline bg-surface-1 text-ink hover:bg-surface-2`}
+                    >
+                      Edit
+                    </Link>
+                    <Button
+                      type="button"
+                      variant="accent"
+                      disabled={
+                        startingId === opened.id ||
+                        opened._count.questions === 0
+                      }
+                      onClick={() => void startWaitingRoom(opened.id)}
+                      title={
+                        opened._count.questions === 0
+                          ? "Add questions before starting"
+                          : "Open host waiting room"
+                      }
+                    >
+                      {startingId === opened.id ? "Starting…" : "Begin"}
+                    </Button>
+                  </div>
+                </Card>
+              </li>
+            )}
+
+            {rest.map((quiz) => (
+              <li key={quiz.id}>
+                <Card padding="md">
+                  <button
                     type="button"
-                    variant="accent"
-                    disabled={
-                      startingId === quiz.id || quiz._count.questions === 0
-                    }
-                    onClick={() => void startWaitingRoom(quiz.id)}
-                    title={
-                      quiz._count.questions === 0
-                        ? "Add questions before starting"
-                        : "Open host waiting room"
-                    }
+                    className="flex w-full flex-wrap items-start justify-between gap-3 border-0 bg-transparent p-0 text-left"
+                    onClick={() => setExpandedId(quiz.id)}
                   >
-                    {startingId === quiz.id ? "Starting…" : "Begin"}
-                  </Button>
+                    <div className="min-w-0 flex-1">
+                      <strong className="text-subhead font-medium">
+                        {quiz.name}
+                      </strong>
+                      {quiz.description && (
+                        <p className="text-body-sm mt-1 mb-0 text-ink-muted">
+                          {quiz.description}
+                        </p>
+                      )}
+                      <p className="text-caption mt-1 mb-0 text-ink-muted">
+                        {quiz._count.questions} questions ·{" "}
+                        {quiz._count.sessions} sessions
+                      </p>
+                    </div>
+                  </button>
                 </Card>
               </li>
             ))}
@@ -273,5 +324,22 @@ export default function QuizzesPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function QuizzesPage() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          style={appShellVars}
+          className="flex items-center justify-center p-8"
+        >
+          <p className="text-body m-0 text-ink-muted">Loading…</p>
+        </main>
+      }
+    >
+      <QuizzesContent />
+    </Suspense>
   );
 }

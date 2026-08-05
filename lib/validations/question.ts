@@ -1,8 +1,30 @@
 import { z } from "zod";
 
 const SCORE_VALUES = [1000, 2000, 3000, 4000, 5000] as const;
-const MIN_DURATION_MS = 10_000;
-const MAX_DURATION_MS = 180_000;
+
+/** Allowed question timers (ms): 30s, 45s, 1m, 2m, 3m, 5m */
+export const DURATION_VALUES_MS = [
+  30_000,
+  45_000,
+  60_000,
+  120_000,
+  180_000,
+  300_000,
+] as const;
+
+export type DurationMs = (typeof DURATION_VALUES_MS)[number];
+
+export const DURATION_OPTIONS: ReadonlyArray<{
+  value: DurationMs;
+  label: string;
+}> = [
+  { value: 30_000, label: "30 sec" },
+  { value: 45_000, label: "45 sec" },
+  { value: 60_000, label: "1 min" },
+  { value: 120_000, label: "2 min" },
+  { value: 180_000, label: "3 min" },
+  { value: 300_000, label: "5 min" },
+];
 
 const questionTypeSchema = z.enum(["MCQ", "MSQ", "TRUE_FALSE"]);
 const analyticsTypeSchema = z.enum(["BARCHART", "PIE_CHART", "DONUT_CHART"]);
@@ -37,8 +59,14 @@ export const questionSchema = z
     duration: z
       .number()
       .int()
-      .min(MIN_DURATION_MS, "Duration must be at least 10 seconds")
-      .max(MAX_DURATION_MS, "Duration must be at most 3 minutes"),
+      .refine(
+        (value): value is DurationMs =>
+          (DURATION_VALUES_MS as readonly number[]).includes(value),
+        {
+          message:
+            "Duration must be one of 30s, 45s, 1 min, 2 min, 3 min, or 5 min",
+        },
+      ),
     position: z.number().int().min(0, "Position must be 0 or greater"),
   })
   .superRefine((question, ctx) => {
@@ -96,16 +124,24 @@ export const questionWithOptionsSchema = z
     const correctCount = options.filter(
       (option) => option.optionNature === "CORRECT",
     ).length;
+    const wrongCount = options.filter(
+      (option) => option.optionNature === "WRONG",
+    ).length;
 
-    if (
-      question.questionType === "MCQ" ||
-      question.questionType === "TRUE_FALSE"
-    ) {
-      if (correctCount !== 1) {
+    if (question.questionType === "TRUE_FALSE") {
+      if (correctCount !== 1 || wrongCount !== 1) {
         ctx.addIssue({
           code: "custom",
           message:
-            "MCQ and True/False questions must have exactly 1 correct option",
+            "True/False questions must have exactly one correct and one wrong option",
+          path: ["options"],
+        });
+      }
+    } else if (question.questionType === "MCQ") {
+      if (correctCount !== 1) {
+        ctx.addIssue({
+          code: "custom",
+          message: "MCQ questions must have exactly 1 correct option",
           path: ["options"],
         });
       }
