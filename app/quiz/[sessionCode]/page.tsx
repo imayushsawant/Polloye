@@ -6,10 +6,10 @@ import type { Socket } from "socket.io-client";
 import {
   LeaderboardList,
   LobbyWaiting,
+  OptionAnalytics,
   OptionGrid,
   RevealPopup,
   StatusBar,
-  TallyBars,
   type LeaderboardRow,
   type PublicQuestion,
 } from "@/components/live";
@@ -263,9 +263,10 @@ export default function QuizPlayPage({
             </>
           ) : (
             <>
-              <TallyBars
+              <OptionAnalytics
                 options={question.options}
                 optionCount={optionCount ?? {}}
+                analyticsType={question.analytics_type}
               />
               <p className="text-body-sm m-0 text-center text-ink-muted">
                 Locked in — tallies update live

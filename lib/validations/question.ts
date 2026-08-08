@@ -71,7 +71,7 @@ export const questionSchema = z
   })
   .superRefine((question, ctx) => {
     const description = question.questionDescription.trim();
-    if (!hasImage(question.quesImgLink) && description.length < 10) {
+    if (!hasImage(question.quesImgLink) && description.length < 1) {
       ctx.addIssue({
         code: "custom",
         message:

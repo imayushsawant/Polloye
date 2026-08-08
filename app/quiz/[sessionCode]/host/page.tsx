@@ -6,8 +6,8 @@ import type { Socket } from "socket.io-client";
 import {
   LeaderboardList,
   LobbyWaiting,
+  OptionAnalytics,
   OptionGrid,
-  TallyBars,
   type LeaderboardRow,
   type PublicQuestion,
 } from "@/components/live";
@@ -236,9 +236,10 @@ export default function LiveHostPage({
                   showCorrect={showRevealMarking}
                 />
 
-                <TallyBars
+                <OptionAnalytics
                   options={question.options}
                   optionCount={tallies}
+                  analyticsType={question.analytics_type}
                   correctIds={correctIds}
                   showCorrect={showRevealMarking}
                 />
@@ -281,9 +282,10 @@ export default function LiveHostPage({
               </p>
               {(phase === "question_active" ||
                 phase === "answer_revealed") && (
-                <TallyBars
+                <OptionAnalytics
                   options={question.options}
                   optionCount={tallies}
+                  analyticsType={question.analytics_type}
                   correctIds={correctIds}
                   showCorrect={showRevealMarking}
                   className="mt-1"

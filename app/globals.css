@@ -29,13 +29,13 @@
   --semantic-error: #c41c1c;
   --semantic-success: #0bdf50;
 
-  /* Report palette (analytics / results only) */
-  --report-orange: #fe4c02;
-  --report-blue: #65b5ff;
-  --report-green: #0bdf50;
-  --report-pink: #ff2067;
-  --report-lime: #b3e01c;
-  --report-cyan: #03b2cb;
+  /* Report palette — muted so charts sit on cream/sage UI */
+  --report-orange: #c4784a;
+  --report-blue: #6a8fa8;
+  --report-green: #7ba05b;
+  --report-pink: #b87a8a;
+  --report-lime: #9aaa5a;
+  --report-cyan: #5a9a9a;
   --brand-blue: #0007cb;
 
   /* Radius */

@@ -352,15 +352,26 @@ export default function CreateQuizPage() {
     setCards(loaded.length > 0 ? loaded : [createBlankCard(0)]);
   }, []);
 
+  // Only reload from the server when quizId changes — not on every auth
+  // session object refresh, which was wiping in-progress question drafts.
+  const loadedQuizIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (isPending) return;
     if (!session) {
       router.replace("/login");
       return;
     }
-    if (editQuizId) {
-      loadQuiz(editQuizId).catch((err: Error) => setError(err.message));
+    if (!editQuizId) {
+      loadedQuizIdRef.current = null;
+      return;
     }
+    if (loadedQuizIdRef.current === editQuizId) return;
+    loadedQuizIdRef.current = editQuizId;
+    loadQuiz(editQuizId).catch((err: Error) => {
+      loadedQuizIdRef.current = null;
+      setError(err.message);
+    });
   }, [isPending, session, router, editQuizId, loadQuiz]);
 
   useEffect(() => {
@@ -457,7 +468,6 @@ export default function CreateQuizPage() {
               ? {
                   ...c,
                   serverId: data.question.id,
-                  localId: data.question.id,
                   dirty: false,
                   saving: false,
                   error: null,
@@ -637,6 +647,7 @@ export default function CreateQuizPage() {
       );
       setActiveQuiz(data.quiz);
       setCards([createBlankCard(0)]);
+      loadedQuizIdRef.current = data.quiz.id;
       router.replace(`/create-quiz?quizId=${data.quiz.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create quiz");

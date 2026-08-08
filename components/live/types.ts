@@ -8,6 +8,8 @@ export type PublicQuestion = {
   question_id: string;
   question_desc: string;
   question_type: string;
+  /** From WS `analytics_type` — bar / pie / donut tallies after submit */
+  analytics_type?: string;
   score: number;
   duration: number;
   options: PublicOption[];
