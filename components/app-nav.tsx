@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { cx } from "@/components/ui";
+import { PolloyeLogo } from "@/components/polloye-logo";
 
 type Props = {
   children?: ReactNode;
@@ -62,9 +63,10 @@ export function AppNav({ children, onSignOut }: Props) {
           <div className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5 md:px-6 md:py-3.5">
             <Link
               href="/dashboard"
-              className="shrink-0 text-[17px] font-normal tracking-[-0.35px] text-canvas no-underline sm:text-[18px]"
+              className="shrink-0 text-canvas no-underline"
+              aria-label="Polloye home"
             >
-              Polloye
+              <PolloyeLogo className="h-[31px] sm:h-[34px]" />
             </Link>
 
             <nav

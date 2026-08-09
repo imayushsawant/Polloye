@@ -244,7 +244,7 @@ body {
 @media (max-width: 1023px) {
   .notch-nav-collapsed {
     width: fit-content;
-    max-width: 10.75rem;
+    max-width: 13.5rem;
   }
 
   .notch-nav-open {
@@ -330,6 +330,10 @@ body {
 }
 
 /* Notch link: white underline draws left → right on hover */
+.notch-link {
+  transition: text-shadow 220ms ease;
+}
+
 .notch-link::after {
   content: "";
   position: absolute;
@@ -342,6 +346,10 @@ body {
   transform-origin: left center;
   transition: transform 220ms ease;
   pointer-events: none;
+}
+
+.notch-link:not(.notch-link-active):hover {
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.45);
 }
 
 .notch-link:not(.notch-link-active):hover::after {

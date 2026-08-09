@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Polloye",
   description: "Live quiz platform — create, host, and join real-time quizzes.",
+  icons: {
+    icon: [{ url: "/polloye-icon.svg", type: "image/svg+xml" }],
+    shortcut: "/polloye-icon.svg",
+    apple: "/polloye-icon.svg",
+  },
 };
 
 export default function RootLayout({
