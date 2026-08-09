@@ -6,7 +6,7 @@ import {
   requireSession,
 } from "@/lib/api";
 import {
-  buildQuestionImageKey,
+  buildImageKey,
   createPresignedPutUrl,
   isAllowedImageType,
   publicUrlForKey,
@@ -15,7 +15,7 @@ import {
 const bodySchema = z.object({
   quizId: z.string().uuid(),
   contentType: z.string().min(1),
-  kind: z.enum(["question"]).default("question"),
+  kind: z.enum(["question", "option"]).default("question"),
 });
 
 export async function POST(request: Request) {
@@ -47,11 +47,7 @@ export async function POST(request: Request) {
   if (ownership.error) return ownership.error;
 
   try {
-    if (kind !== "question") {
-      return jsonError("Unsupported upload kind", 400);
-    }
-
-    const key = buildQuestionImageKey(quizId, contentType);
+    const key = buildImageKey(quizId, kind, contentType);
     const uploadUrl = await createPresignedPutUrl({ key, contentType });
     const publicUrl = publicUrlForKey(key);
 

@@ -42,6 +42,8 @@ export function OptionGrid({
         const isCorrect = correctIds.includes(opt.option_id);
         const revealCorrect = showCorrect && isCorrect;
         const revealWrong = showCorrect && selected && !isCorrect;
+        const hasImage = Boolean(opt.opt_img_link);
+        const hasText = Boolean(opt.option_description?.trim());
 
         return (
           <button
@@ -63,7 +65,21 @@ export function OptionGrid({
                     : "border-hairline bg-surface-1 text-ink hover:border-ink-tertiary",
             )}
           >
-            {opt.option_description}
+            <span className="flex flex-col gap-2">
+              {hasImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={opt.opt_img_link!}
+                  alt=""
+                  className="max-h-36 w-full rounded-md object-contain"
+                />
+              ) : null}
+              {hasText ? (
+                <span>{opt.option_description}</span>
+              ) : !hasImage ? (
+                <span className="text-ink-muted">—</span>
+              ) : null}
+            </span>
           </button>
         );
       })}

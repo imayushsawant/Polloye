@@ -46,13 +46,15 @@ type QuestionCard = {
   dirty: boolean;
   saving: boolean;
   imageUploading: boolean;
+  /** Index of option currently uploading an image, if any. */
+  optionImageUploading: number | null;
   error: string | null;
   collapsed: boolean;
   advancedOpen: boolean;
 };
 
-const MAX_QUESTION_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_QUESTION_IMAGE_TYPES = new Set([
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
@@ -231,6 +233,7 @@ function createBlankCard(position: number): QuestionCard {
     dirty: true,
     saving: false,
     imageUploading: false,
+    optionImageUploading: null,
     error: null,
     collapsed: false,
     advancedOpen: false,
@@ -362,6 +365,7 @@ export default function CreateQuizPage() {
           dirty: false,
           saving: false,
           imageUploading: false,
+          optionImageUploading: null,
           error: null,
           collapsed: false,
           advancedOpen: false,
@@ -555,7 +559,7 @@ export default function CreateQuizPage() {
       return;
     }
 
-    if (!ALLOWED_QUESTION_IMAGE_TYPES.has(file.type)) {
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
       setCards((prev) =>
         prev.map((c) =>
           c.localId === localId
@@ -569,7 +573,7 @@ export default function CreateQuizPage() {
       return;
     }
 
-    if (file.size > MAX_QUESTION_IMAGE_BYTES) {
+    if (file.size > MAX_IMAGE_BYTES) {
       setCards((prev) =>
         prev.map((c) =>
           c.localId === localId
@@ -638,6 +642,106 @@ export default function CreateQuizPage() {
     updateCard(localId, (c) => ({
       ...c,
       question: { ...c.question, quesImgLink: "" },
+    }));
+  }
+
+  async function uploadOptionImage(
+    localId: string,
+    optionIndex: number,
+    file: File,
+  ) {
+    const quiz = activeQuizRef.current;
+    if (!quiz) {
+      setError("Save the quiz name first so images can be uploaded.");
+      return;
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      setCards((prev) =>
+        prev.map((c) =>
+          c.localId === localId
+            ? {
+                ...c,
+                error: "Use a JPEG, PNG, WebP, or GIF image.",
+              }
+            : c,
+        ),
+      );
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setCards((prev) =>
+        prev.map((c) =>
+          c.localId === localId
+            ? {
+                ...c,
+                error: "Image must be 5 MB or smaller.",
+              }
+            : c,
+        ),
+      );
+      return;
+    }
+
+    setCards((prev) =>
+      prev.map((c) =>
+        c.localId === localId
+          ? { ...c, optionImageUploading: optionIndex, error: null }
+          : c,
+      ),
+    );
+
+    try {
+      const form = new FormData();
+      form.append("quizId", quiz.id);
+      form.append("kind", "option");
+      form.append("file", file);
+
+      const data = await readJson(
+        await fetch("/api/upload", {
+          method: "POST",
+          body: form,
+        }),
+      );
+
+      setCards((prev) =>
+        prev.map((c) =>
+          c.localId === localId
+            ? {
+                ...c,
+                optionImageUploading: null,
+                dirty: true,
+                error: null,
+                options: c.options.map((opt, i) =>
+                  i === optionIndex
+                    ? { ...opt, optImgLink: data.publicUrl as string }
+                    : opt,
+                ),
+              }
+            : c,
+        ),
+      );
+      scheduleSave(localId);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to upload image";
+      setCards((prev) =>
+        prev.map((c) =>
+          c.localId === localId
+            ? { ...c, optionImageUploading: null, error: message }
+            : c,
+        ),
+      );
+    }
+  }
+
+  function removeOptionImage(localId: string, optionIndex: number) {
+    updateCard(localId, (c) => ({
+      ...c,
+      options: c.options.map((opt, i) =>
+        i === optionIndex ? { ...opt, optImgLink: "" } : opt,
+      ),
     }));
   }
 
@@ -1291,16 +1395,20 @@ export default function CreateQuizPage() {
                           )}
                       </div>
 
-                      {card.options.map((option, optionIndex) => (
+                      {card.options.map((option, optionIndex) => {
+                        const optionUploading =
+                          card.optionImageUploading === optionIndex;
+                        return (
                         <div
                           key={optionIndex}
                           className={cx(
-                            "flex flex-wrap items-center gap-2 rounded-md border border-hairline p-3",
+                            "flex flex-col gap-2 rounded-md border border-hairline p-3",
                             option.optionNature === "CORRECT"
                               ? "bg-[color-mix(in_srgb,var(--sage)_22%,white)]"
                               : "bg-[color-mix(in_srgb,var(--semantic-error)_12%,white)]",
                           )}
                         >
+                          <div className="flex flex-wrap items-center gap-2">
                           <select
                             value={option.optionNature}
                             aria-label={`Option ${optionIndex + 1} nature`}
@@ -1376,6 +1484,44 @@ export default function CreateQuizPage() {
                               }))
                             }
                           />
+                          <label
+                            className={cx(
+                              "inline-flex min-h-10 min-w-10 cursor-pointer items-center justify-center rounded-md border border-hairline bg-surface-1 text-ink-muted transition-colors hover:text-ink",
+                              (!activeQuiz || optionUploading) &&
+                                "pointer-events-none opacity-50",
+                            )}
+                            title={
+                              option.optImgLink
+                                ? "Replace option image"
+                                : "Add option image"
+                            }
+                            aria-label={
+                              optionUploading
+                                ? `Uploading image for option ${optionIndex + 1}`
+                                : option.optImgLink
+                                  ? `Replace image for option ${optionIndex + 1}`
+                                  : `Add image for option ${optionIndex + 1}`
+                            }
+                          >
+                            <IconImage />
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,image/gif"
+                              className="sr-only"
+                              disabled={!activeQuiz || optionUploading}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                e.target.value = "";
+                                if (file) {
+                                  void uploadOptionImage(
+                                    card.localId,
+                                    optionIndex,
+                                    file,
+                                  );
+                                }
+                              }}
+                            />
+                          </label>
                           {card.question.questionType !== "TRUE_FALSE" &&
                             card.options.length > 2 && (
                               <button
@@ -1395,8 +1541,39 @@ export default function CreateQuizPage() {
                                 <IconTrash />
                               </button>
                             )}
+                          </div>
+
+                          {optionUploading && (
+                            <p className="text-caption m-0 text-ink-subtle">
+                              Uploading image…
+                            </p>
+                          )}
+
+                          {option.optImgLink ? (
+                            <div className="relative max-w-xs overflow-hidden rounded-md border border-hairline bg-surface-1">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={option.optImgLink}
+                                alt=""
+                                className="max-h-32 w-full object-contain"
+                              />
+                              <button
+                                type="button"
+                                className="absolute right-2 top-2 inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-hairline bg-surface-1 text-ink-muted hover:text-semantic-error"
+                                aria-label={`Remove image for option ${optionIndex + 1}`}
+                                title="Remove image"
+                                disabled={optionUploading}
+                                onClick={() =>
+                                  removeOptionImage(card.localId, optionIndex)
+                                }
+                              >
+                                <IconTrash />
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}

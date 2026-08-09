@@ -60,6 +60,26 @@ export function buildQuestionImageKey(
   return `quizzes/${quizId}/questions/${randomUUID()}.${ext}`;
 }
 
+export function buildOptionImageKey(
+  quizId: string,
+  contentType: AllowedImageType,
+): string {
+  const ext = EXT_BY_TYPE[contentType];
+  return `quizzes/${quizId}/options/${randomUUID()}.${ext}`;
+}
+
+export type UploadKind = "question" | "option";
+
+export function buildImageKey(
+  quizId: string,
+  kind: UploadKind,
+  contentType: AllowedImageType,
+): string {
+  return kind === "option"
+    ? buildOptionImageKey(quizId, contentType)
+    : buildQuestionImageKey(quizId, contentType);
+}
+
 export function publicUrlForKey(key: string): string {
   const base = (
     process.env.R2_PUBLIC_BASE_URL?.trim() ||

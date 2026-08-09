@@ -5,12 +5,15 @@ import {
   requireSession,
 } from "@/lib/api";
 import {
-  buildQuestionImageKey,
+  buildImageKey,
   isAllowedImageType,
   MAX_IMAGE_BYTES,
   publicUrlForKey,
   putObject,
+  type UploadKind,
 } from "@/lib/r2";
+
+const UPLOAD_KINDS = new Set<UploadKind>(["question", "option"]);
 
 export async function POST(request: Request) {
   const authResult = await requireSession(request);
@@ -24,15 +27,17 @@ export async function POST(request: Request) {
   }
 
   const quizId = String(form.get("quizId") ?? "");
-  const kind = String(form.get("kind") ?? "question");
+  const kindRaw = String(form.get("kind") ?? "question");
   const file = form.get("file");
 
   if (!quizId) {
     return jsonError("quizId is required", 400);
   }
-  if (kind !== "question") {
+  if (!UPLOAD_KINDS.has(kindRaw as UploadKind)) {
     return jsonError("Unsupported upload kind", 400);
   }
+  const kind = kindRaw as UploadKind;
+
   if (!(file instanceof File)) {
     return jsonError("file is required", 400);
   }
@@ -53,7 +58,7 @@ export async function POST(request: Request) {
   if (ownership.error) return ownership.error;
 
   try {
-    const key = buildQuestionImageKey(quizId, contentType);
+    const key = buildImageKey(quizId, kind, contentType);
     const body = Buffer.from(await file.arrayBuffer());
     await putObject({ key, contentType, body });
     const publicUrl = publicUrlForKey(key);
