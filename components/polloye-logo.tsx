@@ -1,3 +1,6 @@
+"use client";
+
+import { useId } from "react";
 import { cx } from "@/components/ui";
 
 type Props = {
@@ -7,6 +10,8 @@ type Props = {
 
 /** Wordmark from public/polloye-logo.svg — transparent holes, fill via currentColor. */
 export function PolloyeLogo({ className, title = "Polloye" }: Props) {
+  const maskId = useId().replace(/:/g, "");
+
   return (
     <svg
       viewBox="205 0 1843 684"
@@ -18,7 +23,7 @@ export function PolloyeLogo({ className, title = "Polloye" }: Props) {
       <title>{title}</title>
       <defs>
         <mask
-          id="polloye-logo-holes"
+          id={maskId}
           maskUnits="userSpaceOnUse"
           x="205"
           y="0"
@@ -46,7 +51,7 @@ export function PolloyeLogo({ className, title = "Polloye" }: Props) {
           />
         </mask>
       </defs>
-      <g fill="currentColor" mask="url(#polloye-logo-holes)">
+      <g fill="currentColor" mask={`url(#${maskId})`}>
         <path d="M 382.857 164.256 C 390.917 163.718 401.209 164.274 409.5 164.083 C 443.675 163.09 473.389 167.408 501.59 187.831 C 545.814 219.858 567.095 269.626 532.557 318.348 C 502.885 360.207 455.279 366.104 408.648 373.591 C 407.916 397.888 409.014 423.354 408.615 447.746 C 408.409 460.274 409.281 473.402 407.636 485.795 C 398.267 505.005 379.65 502.573 369.156 485.093 C 367.445 456.547 368.65 414.832 368.839 385.632 C 342.916 396.573 339.18 402.133 320.937 421.577 C 311.039 414.997 295.687 401.899 285.948 393.98 C 293.214 387.878 293.515 383.116 300.086 376.82 C 318.552 359.128 344.515 347.432 368.88 340.875 C 368.35 319.313 366.747 185.636 370.007 176.325 C 372.216 170.017 377.145 166.895 382.857 164.256 Z" />
         <path
           d="M 241.906 440.237 C 251.305 439.622 261.128 441.802 268.859 447.335 C 276.306 452.71 281.295 460.839 282.715 469.913 C 286.297 492.73 267.485 509.486 246.263 512.762 C 196.243 514.673 190.62 449.777 241.906 440.237 Z"
