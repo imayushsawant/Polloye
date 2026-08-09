@@ -1,5 +1,6 @@
 export { LeaderboardList } from "./leaderboard-list";
 export { LobbyWaiting } from "./lobby-waiting";
+export { MidQuestionWaiting } from "./mid-question-waiting";
 export { OptionGrid } from "./option-grid";
 export { RevealPopup } from "./reveal-popup";
 export { StatusBar } from "./status-bar";

@@ -6,6 +6,7 @@ import type { Socket } from "socket.io-client";
 import {
   LeaderboardList,
   LobbyWaiting,
+  MidQuestionWaiting,
   OptionAnalytics,
   OptionGrid,
   RevealPopup,
@@ -51,6 +52,8 @@ export default function QuizPlayPage({
   const [rank, setRank] = useState<number | null>(null);
   const [totalScore, setTotalScore] = useState<number | null>(null);
   const [showRevealPopup, setShowRevealPopup] = useState(false);
+  /** Joined/reconnected while a question was already live — wait for next. */
+  const [waitingForNextQuestion, setWaitingForNextQuestion] = useState(false);
 
   useEffect(() => {
     if (!saved?.token) {
@@ -71,13 +74,18 @@ export default function QuizPlayPage({
         phase: string;
         participant_count: number;
         current_question: PublicQuestion | null;
+        blocked_from_current_question?: boolean;
         leaderboard?: LeaderboardRow[] | null;
         total_score?: number;
         rank?: number;
       }) => {
         setPhase(state.phase);
         setParticipantCount(state.participant_count);
-        if (state.current_question) {
+        if (state.blocked_from_current_question) {
+          setWaitingForNextQuestion(true);
+          setQuestion(null);
+        } else if (state.current_question) {
+          setWaitingForNextQuestion(false);
           setQuestion(state.current_question);
         }
         if (state.leaderboard) {
@@ -95,6 +103,7 @@ export default function QuizPlayPage({
       setParticipantCount(p.participant_count),
     );
     s.on("question:reveal", (q: PublicQuestion) => {
+      setWaitingForNextQuestion(false);
       setPhase("question_active");
       setQuestion(q);
       setSelected([]);
@@ -165,7 +174,7 @@ export default function QuizPlayPage({
   }, [showRevealPopup]);
 
   function toggleOption(optionId: string) {
-    if (submitted || !question) return;
+    if (submitted || !question || waitingForNextQuestion) return;
     if (question.question_type === "MSQ") {
       setSelected((prev) =>
         prev.includes(optionId)
@@ -178,7 +187,15 @@ export default function QuizPlayPage({
   }
 
   function submitAnswer() {
-    if (!socket || !question || submitted || selected.length === 0) return;
+    if (
+      !socket ||
+      !question ||
+      submitted ||
+      waitingForNextQuestion ||
+      selected.length === 0
+    ) {
+      return;
+    }
     socket.emit("answer:submit", {
       question_id: question.question_id,
       optionid: selected,
@@ -200,6 +217,9 @@ export default function QuizPlayPage({
   }
 
   const showStatusBar = phase !== "connecting" && phase !== "finished";
+  const showMidQuestionWait =
+    waitingForNextQuestion &&
+    (phase === "question_active" || phase === "answer_revealed");
 
   return (
     <main className="relative flex min-h-dvh flex-col bg-canvas text-ink">
@@ -207,7 +227,7 @@ export default function QuizPlayPage({
         <Eyebrow tone="sage">Polloye</Eyebrow>
         <div className="flex items-center gap-2">
           <span className="text-mono text-ink-subtle">{sessionCode}</span>
-          <Badge tone="phase">{phaseLabel(phase)}</Badge>
+          <Badge tone="phase">{phaseLabel(phase, waitingForNextQuestion)}</Badge>
         </div>
       </header>
 
@@ -231,7 +251,11 @@ export default function QuizPlayPage({
         />
       )}
 
-      {question && phase === "question_active" && (
+      {showMidQuestionWait && (
+        <MidQuestionWaiting participantName={saved.participantName} />
+      )}
+
+      {question && phase === "question_active" && !waitingForNextQuestion && (
         <section
           className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-5 px-5 pb-24 pt-4"
         >
@@ -284,7 +308,9 @@ export default function QuizPlayPage({
         </section>
       )}
 
-      {phase === "answer_revealed" && !showRevealPopup && (
+      {phase === "answer_revealed" &&
+        !showRevealPopup &&
+        !waitingForNextQuestion && (
         <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-4 px-6 pb-24 text-center">
           <Eyebrow>Answer revealed</Eyebrow>
           <h2 className="text-headline m-0">Waiting for host…</h2>
@@ -310,7 +336,11 @@ export default function QuizPlayPage({
       )}
 
       <RevealPopup
-        open={showRevealPopup && phase === "answer_revealed"}
+        open={
+          showRevealPopup &&
+          phase === "answer_revealed" &&
+          !waitingForNextQuestion
+        }
         correct={Boolean(isCorrectReveal)}
         attainedScore={attainedScore ?? 0}
       />
@@ -320,7 +350,13 @@ export default function QuizPlayPage({
   );
 }
 
-function phaseLabel(phase: string): string {
+function phaseLabel(phase: string, waitingForNextQuestion: boolean): string {
+  if (
+    waitingForNextQuestion &&
+    (phase === "question_active" || phase === "answer_revealed")
+  ) {
+    return "Waiting";
+  }
   switch (phase) {
     case "lobby":
       return "Lobby";

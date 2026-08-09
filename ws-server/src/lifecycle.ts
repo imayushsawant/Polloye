@@ -402,18 +402,19 @@ export function attachSocketHandlers(io: Server, socket: Socket) {
     );
     session.participantSockets.set(participantAuth.participantId, socket.id);
 
-    // Mid-question reconnect: cannot answer the ongoing question
+    // Mid-question join/reconnect without an answer: cannot play this question
     if (session.phase === "question_active") {
-      session.blockedFromCurrentQuestion.add(participantAuth.participantId);
-      logger.warn("participant_mid_question_join", {
-        sessionId: session.sessionId,
-        sessionCode: session.sessionCode,
-        participantId: participantAuth.participantId,
-        questionIndex: session.currentQuestionIndex,
-      });
-      // Already-submitted players still get live tallies after reconnect
       if (session.activeResponses.has(participantAuth.participantId)) {
+        // Already locked in — restore live tallies after reconnect
         emitOptionCounts(io, session);
+      } else {
+        session.blockedFromCurrentQuestion.add(participantAuth.participantId);
+        logger.warn("participant_mid_question_join", {
+          sessionId: session.sessionId,
+          sessionCode: session.sessionCode,
+          participantId: participantAuth.participantId,
+          questionIndex: session.currentQuestionIndex,
+        });
       }
     }
 
@@ -623,22 +624,34 @@ function snapshotState(session: LiveSession, forParticipantId?: string) {
       ? session.questions[session.currentQuestionIndex]
       : null;
 
+  const blockedFromCurrent = Boolean(
+    forParticipantId &&
+      session.blockedFromCurrentQuestion.has(forParticipantId),
+  );
+
   const base = {
     phase: session.phase,
     session_code: session.sessionCode,
     participant_count: session.participants.size,
     host_connected: session.hostConnected,
+    // Late joiners must not see the in-flight question
     current_question:
-      question && session.phase === "question_active"
+      question &&
+      session.phase === "question_active" &&
+      !blockedFromCurrent
         ? publicQuestionPayload(question)
         : null,
+    blocked_from_current_question: blockedFromCurrent,
     leaderboard:
       session.phase === "leaderboard" || session.phase === "finished"
         ? leaderboardPayload(session)
         : null,
   };
 
-  if (!forParticipantId) return base;
+  if (!forParticipantId) {
+    const { blocked_from_current_question: _, ...hostBase } = base;
+    return hostBase;
+  }
 
   const { total_score, rank } = rankAndScoreForParticipant(
     session,
