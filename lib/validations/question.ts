@@ -1,6 +1,20 @@
 import { z } from "zod";
 
-const SCORE_VALUES = [1000, 2000, 3000, 4000, 5000] as const;
+export const SCORE_VALUES = [0, 1000, 2000, 3000, 4000, 5000] as const;
+
+export type ScoreValue = (typeof SCORE_VALUES)[number];
+
+export const SCORE_OPTIONS: ReadonlyArray<{
+  value: ScoreValue;
+  label: string;
+}> = [
+  { value: 0, label: "0 (no points / feedback)" },
+  { value: 1000, label: "1000" },
+  { value: 2000, label: "2000" },
+  { value: 3000, label: "3000" },
+  { value: 4000, label: "4000" },
+  { value: 5000, label: "5000" },
+];
 
 /** Allowed question timers (ms): 30s, 45s, 1m, 2m, 3m, 5m */
 export const DURATION_VALUES_MS = [
@@ -66,9 +80,12 @@ export const questionSchema = z
       .number()
       .int()
       .refine(
-        (value): value is (typeof SCORE_VALUES)[number] =>
+        (value): value is ScoreValue =>
           (SCORE_VALUES as readonly number[]).includes(value),
-        { message: "Score must be one of 1000, 2000, 3000, 4000, or 5000" },
+        {
+          message:
+            "Score must be one of 0, 1000, 2000, 3000, 4000, or 5000",
+        },
       ),
     duration: z
       .number()

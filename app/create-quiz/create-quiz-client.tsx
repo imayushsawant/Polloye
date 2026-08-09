@@ -15,6 +15,7 @@ import { Button, Card, Eyebrow, Input, cx } from "@/components/ui";
 import {
   DURATION_OPTIONS,
   DURATION_VALUES_MS,
+  SCORE_OPTIONS,
   type DurationMs,
 } from "@/lib/validations/question";
 
@@ -1357,9 +1358,9 @@ export default function CreateQuizPage() {
                               }))
                             }
                           >
-                            {[1000, 2000, 3000, 4000, 5000].map((value) => (
-                              <option key={value} value={value}>
-                                {value}
+                            {SCORE_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
                               </option>
                             ))}
                           </select>
