@@ -242,6 +242,14 @@ export default function QuizPlayPage({
             <h1 className="text-card-title m-0 sm:text-headline">
               {question.question_desc}
             </h1>
+            {question.ques_img_link ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={question.ques_img_link}
+                alt=""
+                className="mt-1 max-h-56 w-full rounded-md border border-hairline object-contain bg-surface-1"
+              />
+            ) : null}
           </div>
 
           {!submitted ? (

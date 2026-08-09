@@ -7,6 +7,7 @@ export type PublicOption = {
 export type PublicQuestion = {
   question_id: string;
   question_desc: string;
+  ques_img_link?: string | null;
   question_type: string;
   /** From WS `analytics_type` — bar / pie / donut tallies after submit */
   analytics_type?: string;

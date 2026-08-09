@@ -45,10 +45,19 @@ type QuestionCard = {
   options: OptionDraft[];
   dirty: boolean;
   saving: boolean;
+  imageUploading: boolean;
   error: string | null;
   collapsed: boolean;
   advancedOpen: boolean;
 };
+
+const MAX_QUESTION_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_QUESTION_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 
 type QuizSummary = {
   id: string;
@@ -156,6 +165,27 @@ function IconGrip({ className }: { className?: string }) {
   );
 }
 
+function IconImage({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="M21 15l-5-5L5 21" />
+    </svg>
+  );
+}
+
 function coerceDurationMs(ms: number): DurationMs {
   if ((DURATION_VALUES_MS as readonly number[]).includes(ms)) {
     return ms as DurationMs;
@@ -200,6 +230,7 @@ function createBlankCard(position: number): QuestionCard {
     serverId: null,
     dirty: true,
     saving: false,
+    imageUploading: false,
     error: null,
     collapsed: false,
     advancedOpen: false,
@@ -330,6 +361,7 @@ export default function CreateQuizPage() {
           serverId: q.id,
           dirty: false,
           saving: false,
+          imageUploading: false,
           error: null,
           collapsed: false,
           advancedOpen: false,
@@ -514,6 +546,99 @@ export default function CreateQuizPage() {
       }),
     );
     if (autosave) scheduleSave(localId);
+  }
+
+  async function uploadQuestionImage(localId: string, file: File) {
+    const quiz = activeQuizRef.current;
+    if (!quiz) {
+      setError("Save the quiz name first so images can be uploaded.");
+      return;
+    }
+
+    if (!ALLOWED_QUESTION_IMAGE_TYPES.has(file.type)) {
+      setCards((prev) =>
+        prev.map((c) =>
+          c.localId === localId
+            ? {
+                ...c,
+                error: "Use a JPEG, PNG, WebP, or GIF image.",
+              }
+            : c,
+        ),
+      );
+      return;
+    }
+
+    if (file.size > MAX_QUESTION_IMAGE_BYTES) {
+      setCards((prev) =>
+        prev.map((c) =>
+          c.localId === localId
+            ? {
+                ...c,
+                error: "Image must be 5 MB or smaller.",
+              }
+            : c,
+        ),
+      );
+      return;
+    }
+
+    setCards((prev) =>
+      prev.map((c) =>
+        c.localId === localId
+          ? { ...c, imageUploading: true, error: null }
+          : c,
+      ),
+    );
+
+    try {
+      const form = new FormData();
+      form.append("quizId", quiz.id);
+      form.append("kind", "question");
+      form.append("file", file);
+
+      const data = await readJson(
+        await fetch("/api/upload", {
+          method: "POST",
+          body: form,
+        }),
+      );
+
+      setCards((prev) =>
+        prev.map((c) =>
+          c.localId === localId
+            ? {
+                ...c,
+                imageUploading: false,
+                dirty: true,
+                error: null,
+                question: {
+                  ...c.question,
+                  quesImgLink: data.publicUrl as string,
+                },
+              }
+            : c,
+        ),
+      );
+      scheduleSave(localId);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to upload image";
+      setCards((prev) =>
+        prev.map((c) =>
+          c.localId === localId
+            ? { ...c, imageUploading: false, error: message }
+            : c,
+        ),
+      );
+    }
+  }
+
+  function removeQuestionImage(localId: string) {
+    updateCard(localId, (c) => ({
+      ...c,
+      question: { ...c.question, quesImgLink: "" },
+    }));
   }
 
   function addQuestionCard() {
@@ -943,6 +1068,64 @@ export default function CreateQuizPage() {
                         }
                       />
                     </label>
+
+                    <div className="flex flex-col gap-2">
+                      {card.question.quesImgLink ? (
+                        <div className="relative max-w-md overflow-hidden rounded-md border border-hairline bg-surface-2">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={card.question.quesImgLink}
+                            alt="Question"
+                            className="max-h-48 w-full object-contain"
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2 top-2 inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-hairline bg-surface-1 text-ink-muted hover:text-semantic-error"
+                            aria-label="Remove question image"
+                            title="Remove image"
+                            disabled={card.imageUploading}
+                            onClick={() => removeQuestionImage(card.localId)}
+                          >
+                            <IconTrash />
+                          </button>
+                        </div>
+                      ) : null}
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label
+                          className={cx(
+                            "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-hairline bg-surface-1 px-3.5 text-body-sm font-medium text-ink transition-colors hover:border-ink",
+                            (!activeQuiz || card.imageUploading) &&
+                              "pointer-events-none opacity-50",
+                          )}
+                        >
+                          <IconImage />
+                          {card.imageUploading
+                            ? "Uploading…"
+                            : card.question.quesImgLink
+                              ? "Replace image"
+                              : "Add image"}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            className="sr-only"
+                            disabled={!activeQuiz || card.imageUploading}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              e.target.value = "";
+                              if (file) {
+                                void uploadQuestionImage(card.localId, file);
+                              }
+                            }}
+                          />
+                        </label>
+                        {!activeQuiz && (
+                          <p className="text-caption m-0 text-ink-subtle">
+                            Save the quiz name first to enable image uploads.
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
                     <div className="flex flex-wrap items-end gap-3">
                       <label className={cx(labelClass, "min-w-[140px] flex-1")}>

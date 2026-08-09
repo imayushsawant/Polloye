@@ -225,6 +225,14 @@ export default function LiveHostPage({
                   <h1 className="text-headline m-0 sm:text-display-md">
                     {question.question_desc}
                   </h1>
+                  {question.ques_img_link ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={question.ques_img_link}
+                      alt=""
+                      className="mt-1 max-h-72 w-full rounded-md border border-hairline object-contain bg-surface-1"
+                    />
+                  ) : null}
                 </div>
 
                 <OptionGrid
@@ -280,6 +288,14 @@ export default function LiveHostPage({
               <p className="text-body-sm m-0 line-clamp-3 text-ink">
                 {question.question_desc}
               </p>
+              {question.ques_img_link ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={question.ques_img_link}
+                  alt=""
+                  className="max-h-40 w-full rounded-md border border-hairline object-contain bg-surface-1"
+                />
+              ) : null}
               {(phase === "question_active" ||
                 phase === "answer_revealed") && (
                 <OptionAnalytics

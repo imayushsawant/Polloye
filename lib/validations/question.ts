@@ -34,9 +34,23 @@ function hasImage(link: string | null | undefined): boolean {
   return typeof link === "string" && link.trim().length > 0;
 }
 
+/** Empty / whitespace → null; otherwise must be an http(s) URL. */
+const optionalImageUrlSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) return null;
+    if (typeof value !== "string") return value;
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? null : trimmed;
+  },
+  z
+    .url({ protocol: /^https?$/, error: "Image link must be a valid URL" })
+    .nullable()
+    .optional(),
+);
+
 export const optionSchema = z.object({
   optionDescription: z.string().max(150, "Option description max length is 150"),
-  optImgLink: z.string().nullable().optional(),
+  optImgLink: optionalImageUrlSchema,
   optionNature: optionNatureSchema,
 });
 
@@ -45,7 +59,7 @@ export const questionSchema = z
     questionDescription: z
       .string()
       .max(400, "Question description max length is 400"),
-    quesImgLink: z.string().nullable().optional(),
+    quesImgLink: optionalImageUrlSchema,
     questionType: questionTypeSchema,
     analyticsType: analyticsTypeSchema.default("BARCHART"),
     score: z
@@ -75,7 +89,7 @@ export const questionSchema = z
       ctx.addIssue({
         code: "custom",
         message:
-          "Question description must be at least 10 characters when no image is present",
+          "Question description is required when no image is present",
         path: ["questionDescription"],
       });
     }
