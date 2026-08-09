@@ -11,6 +11,9 @@ type Props = {
   /** After reveal — mark correct options */
   correctIds?: string[];
   showCorrect?: boolean;
+  /** `roomy` = larger desktop option cards (participant). Mobile stays the same. */
+  size?: "default" | "roomy";
+  className?: string;
 };
 
 /**
@@ -24,8 +27,11 @@ export function OptionGrid({
   disabled = false,
   correctIds = [],
   showCorrect = false,
+  size = "default",
+  className,
 }: Props) {
   const count = options.length;
+  const roomy = size === "roomy";
   const gridClass =
     count === 4
       ? "grid-cols-2"
@@ -36,7 +42,14 @@ export function OptionGrid({
           : "grid-cols-1";
 
   return (
-    <div className={cx("grid gap-3", gridClass)}>
+    <div
+      className={cx(
+        "grid gap-3",
+        roomy && "md:gap-4 md:flex-1 md:auto-rows-fr",
+        gridClass,
+        className,
+      )}
+    >
       {options.map((opt) => {
         const selected = selectedIds.includes(opt.option_id);
         const isCorrect = correctIds.includes(opt.option_id);
@@ -56,6 +69,7 @@ export function OptionGrid({
               "text-body-lg transition-colors",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
               "disabled:cursor-default",
+              roomy && "md:min-h-0 md:px-5 md:py-5 md:text-subhead",
               revealCorrect
                 ? "border-sage bg-sage/15 text-ink"
                 : revealWrong
@@ -65,13 +79,23 @@ export function OptionGrid({
                     : "border-hairline bg-surface-1 text-ink hover:border-ink-tertiary",
             )}
           >
-            <span className="flex flex-col gap-2">
+            <span
+              className={cx(
+                "flex flex-col gap-2",
+                roomy && "md:h-full md:justify-center md:gap-3",
+              )}
+            >
               {hasImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={opt.opt_img_link!}
                   alt=""
-                  className="max-h-36 w-full rounded-md object-contain"
+                  className={cx(
+                    "max-h-36 w-full rounded-md object-contain",
+                    roomy
+                      ? "md:max-h-[min(28vh,18rem)]"
+                      : "md:max-h-56",
+                  )}
                 />
               ) : null}
               {hasText ? (

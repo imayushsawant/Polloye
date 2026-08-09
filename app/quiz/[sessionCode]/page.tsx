@@ -256,55 +256,58 @@ export default function QuizPlayPage({
       )}
 
       {question && phase === "question_active" && !waitingForNextQuestion && (
-        <section
-          className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-5 px-5 pb-24 pt-4"
-        >
-          <div className="flex flex-col gap-2">
-            <p className="text-mono m-0 text-ink-subtle">
-              {question.question_type} · {question.score} pts
-            </p>
-            <h1 className="text-card-title m-0 sm:text-headline">
-              {question.question_desc}
-            </h1>
-            {question.ques_img_link ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={question.ques_img_link}
-                alt=""
-                className="mt-1 max-h-56 w-full rounded-md border border-hairline object-contain bg-surface-1"
-              />
-            ) : null}
-          </div>
-
-          {!submitted ? (
-            <>
-              <OptionGrid
-                options={question.options}
-                selectedIds={selected}
-                onToggle={toggleOption}
-                disabled={submitted}
-              />
-              <Button
-                variant="primary"
-                className="w-full"
-                disabled={selected.length === 0}
-                onClick={submitAnswer}
-              >
-                Submit
-              </Button>
-            </>
-          ) : (
-            <>
-              <OptionAnalytics
-                options={question.options}
-                optionCount={optionCount ?? {}}
-                analyticsType={question.analytics_type}
-              />
-              <p className="text-body-sm m-0 text-center text-ink-muted">
-                Locked in — tallies update live
+        <section className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-5 px-5 pb-24 pt-4 md:max-w-[1400px] md:min-h-0 md:gap-8 md:px-8 md:pt-4">
+          <div className="flex flex-1 flex-col gap-5 md:grid md:min-h-0 md:flex-1 md:grid-cols-2 md:gap-10">
+            <div className="flex flex-col gap-2 md:min-h-0 md:gap-4">
+              <p className="text-mono m-0 text-ink-subtle">
+                {question.question_type} · {question.score} pts
               </p>
-            </>
-          )}
+              <h1 className="text-card-title m-0 sm:text-headline md:text-display-md">
+                {question.question_desc}
+              </h1>
+              {question.ques_img_link ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={question.ques_img_link}
+                  alt=""
+                  className="mt-1 max-h-56 w-full rounded-md border border-hairline object-contain bg-surface-1 md:mt-2 md:max-h-none md:min-h-[12rem] md:flex-1 md:object-contain"
+                />
+              ) : null}
+            </div>
+
+            <div className="flex flex-col gap-5 md:min-h-0 md:gap-5">
+              {!submitted ? (
+                <>
+                  <OptionGrid
+                    size="roomy"
+                    options={question.options}
+                    selectedIds={selected}
+                    onToggle={toggleOption}
+                    disabled={submitted}
+                  />
+                  <Button
+                    variant="primary"
+                    className="w-full md:mt-auto md:min-h-12"
+                    disabled={selected.length === 0}
+                    onClick={submitAnswer}
+                  >
+                    Submit
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <OptionAnalytics
+                    options={question.options}
+                    optionCount={optionCount ?? {}}
+                    analyticsType={question.analytics_type}
+                  />
+                  <p className="text-body-sm m-0 text-center text-ink-muted md:mt-auto">
+                    Locked in — tallies update live
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
         </section>
       )}
 

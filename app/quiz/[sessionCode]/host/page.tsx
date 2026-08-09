@@ -19,9 +19,7 @@ function hostTokenStorageKey(sessionCode: string) {
   return `polloye:host:${sessionCode.toUpperCase()}`;
 }
 
-type HostMode = "present" | "controls";
-
-/** Live host — Present (projector) + Controls (phase actions). */
+/** Live host — single main screen with phase actions. */
 export default function LiveHostPage({
   params,
 }: {
@@ -43,7 +41,6 @@ export default function LiveHostPage({
   const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [error, setError] = useState("");
   const [joinUrl, setJoinUrl] = useState("");
-  const [mode, setMode] = useState<HostMode>("present");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -184,12 +181,14 @@ export default function LiveHostPage({
   return (
     <main className="relative flex min-h-dvh flex-col bg-canvas text-ink">
       <header className="flex items-center justify-between gap-3 px-5 pt-4 pb-2">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           <Eyebrow tone="sage">Polloye</Eyebrow>
           <span className="text-mono text-ink-subtle">{sessionCode}</span>
           <Badge tone="phase">{hostPhaseLabel(phase)}</Badge>
         </div>
-        <ModeToggle mode={mode} onChange={setMode} />
+        <Button variant="secondary" size="sm" onClick={copyJoinUrl}>
+          {copied ? "Copied" : "Copy join link"}
+        </Button>
       </header>
 
       {error && (
@@ -198,43 +197,43 @@ export default function LiveHostPage({
         </p>
       )}
 
-      {mode === "present" ? (
-        <div
-          className={cx(
-            "mx-auto flex w-full max-w-3xl flex-1 flex-col px-5 pt-4",
-            "pb-28",
-          )}
-        >
-          {(phase === "lobby" || phase === "connecting") && (
-            <LobbyWaiting
-              sessionCode={sessionCode}
-              participantName="Host"
-              participantCount={participantCount}
-              variant="host"
-            />
-          )}
+      <div
+        className={cx(
+          "mx-auto flex w-full max-w-3xl flex-1 flex-col px-5 pt-4",
+          "pb-28",
+          "md:max-w-6xl",
+        )}
+      >
+        {(phase === "lobby" || phase === "connecting") && (
+          <LobbyWaiting
+            sessionCode={sessionCode}
+            participantName="Host"
+            participantCount={participantCount}
+            variant="host"
+          />
+        )}
 
-          {question &&
-            (phase === "question_active" ||
-              phase === "answer_revealed") && (
-              <section className="flex flex-1 flex-col gap-8">
-                <div className="flex flex-col gap-3">
-                  <p className="text-mono m-0 text-ink-subtle">
-                    {question.question_type} · {question.score} pts
-                  </p>
-                  <h1 className="text-headline m-0 sm:text-display-md">
-                    {question.question_desc}
-                  </h1>
-                  {question.ques_img_link ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={question.ques_img_link}
-                      alt=""
-                      className="mt-1 max-h-72 w-full rounded-md border border-hairline object-contain bg-surface-1"
-                    />
-                  ) : null}
-                </div>
+        {question &&
+          (phase === "question_active" || phase === "answer_revealed") && (
+            <section className="flex flex-1 flex-col gap-8 md:grid md:grid-cols-2 md:items-start md:gap-10">
+              <div className="flex flex-col gap-3">
+                <p className="text-mono m-0 text-ink-subtle">
+                  {question.question_type} · {question.score} pts
+                </p>
+                <h1 className="text-headline m-0 sm:text-display-md">
+                  {question.question_desc}
+                </h1>
+                {question.ques_img_link ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={question.ques_img_link}
+                    alt=""
+                    className="mt-1 max-h-72 w-full rounded-md border border-hairline object-contain bg-surface-1 md:max-h-[min(70vh,32rem)]"
+                  />
+                ) : null}
+              </div>
 
+              <div className="flex flex-col gap-6">
                 <OptionGrid
                   options={question.options}
                   selectedIds={[]}
@@ -251,122 +250,33 @@ export default function LiveHostPage({
                   correctIds={correctIds}
                   showCorrect={showRevealMarking}
                 />
-              </section>
-            )}
-
-          {phase === "leaderboard" && (
-            <section className="flex flex-1 flex-col gap-6">
-              <div>
-                <Eyebrow>Live standings</Eyebrow>
-                <h2 className="text-headline m-0 mt-2 sm:text-display-md">
-                  Leaderboard
-                </h2>
               </div>
-              <LeaderboardList rows={leaderboard} />
             </section>
           )}
-        </div>
-      ) : (
-        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-5 pb-10 pt-4">
-          <section className="flex flex-col gap-2 rounded-lg border border-hairline bg-surface-1 p-5">
-            <p className="text-eyebrow m-0 text-ink-muted">Session</p>
-            <p className="text-mono m-0 text-ink">{sessionCode}</p>
-            <p className="text-body-sm m-0 text-ink-muted">
-              {participantCount}{" "}
-              {participantCount === 1 ? "player" : "players"} · {hostPhaseLabel(phase)}
-            </p>
-            <p className="text-body-sm m-0 break-all text-ink-subtle">
-              {joinUrl || "…"}
-            </p>
-            <Button variant="secondary" size="sm" onClick={copyJoinUrl}>
-              {copied ? "Copied" : "Copy join link"}
-            </Button>
+
+        {phase === "leaderboard" && (
+          <section className="flex flex-1 flex-col gap-6">
+            <div>
+              <Eyebrow>Live standings</Eyebrow>
+              <h2 className="text-headline m-0 mt-2 sm:text-display-md">
+                Leaderboard
+              </h2>
+            </div>
+            <LeaderboardList rows={leaderboard} />
           </section>
+        )}
+      </div>
 
-          {question && (
-            <section className="flex flex-col gap-3">
-              <p className="text-body-sm m-0 line-clamp-3 text-ink">
-                {question.question_desc}
-              </p>
-              {question.ques_img_link ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={question.ques_img_link}
-                  alt=""
-                  className="max-h-40 w-full rounded-md border border-hairline object-contain bg-surface-1"
-                />
-              ) : null}
-              {(phase === "question_active" ||
-                phase === "answer_revealed") && (
-                <OptionAnalytics
-                  options={question.options}
-                  optionCount={tallies}
-                  analyticsType={question.analytics_type}
-                  correctIds={correctIds}
-                  showCorrect={showRevealMarking}
-                  className="mt-1"
-                />
-              )}
-            </section>
-          )}
-
-          <HostPhaseActions
-            phase={phase}
-            socket={socket}
-          />
-
-          {phase === "leaderboard" && leaderboard.length > 0 && (
-            <LeaderboardList rows={leaderboard} compact />
-          )}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-surface-1 px-4 py-3">
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 md:max-w-6xl">
+          <p className="text-mono m-0 text-ink-subtle">
+            {participantCount}{" "}
+            {participantCount === 1 ? "player" : "players"}
+          </p>
+          <HostPhaseActions phase={phase} socket={socket} compact />
         </div>
-      )}
-
-      {/* Present mode: persistent phase strip */}
-      {mode === "present" && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-surface-1 px-4 py-3">
-          <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3">
-            <p className="text-mono m-0 text-ink-subtle">
-              {participantCount}{" "}
-              {participantCount === 1 ? "player" : "players"}
-            </p>
-            <HostPhaseActions phase={phase} socket={socket} compact />
-          </div>
-        </div>
-      )}
+      </div>
     </main>
-  );
-}
-
-function ModeToggle({
-  mode,
-  onChange,
-}: {
-  mode: HostMode;
-  onChange: (m: HostMode) => void;
-}) {
-  return (
-    <div
-      className="inline-flex rounded-pill bg-surface-2 p-0.5"
-      role="group"
-      aria-label="Host view mode"
-    >
-      {(["present", "controls"] as const).map((m) => (
-        <button
-          key={m}
-          type="button"
-          onClick={() => onChange(m)}
-          className={cx(
-            "rounded-pill px-3.5 py-1.5 text-caption font-medium capitalize transition-colors",
-            "min-h-9 cursor-pointer",
-            mode === m
-              ? "bg-surface-1 text-ink"
-              : "bg-transparent text-ink-muted",
-          )}
-        >
-          {m}
-        </button>
-      ))}
-    </div>
   );
 }
 
