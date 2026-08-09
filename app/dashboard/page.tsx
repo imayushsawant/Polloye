@@ -71,10 +71,8 @@ export default function DashboardPage() {
 
   const [joinCode, setJoinCode] = useState("");
   const [importCode, setImportCode] = useState("");
-  const [importing, setImporting] = useState(false);
 
   const [tourOpen, setTourOpen] = useState(false);
-
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -133,30 +131,11 @@ export default function DashboardPage() {
     router.push(`/join-quiz/${code}`);
   }
 
-  async function onImport(e: FormEvent) {
+  function onImport(e: FormEvent) {
     e.preventDefault();
-    setError("");
-    setStatus("");
-    setImporting(true);
-    try {
-      const code = importCode.trim().toUpperCase();
-      const res = await fetch(`/api/share-quiz/${encodeURIComponent(code)}`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Import failed");
-        setImporting(false);
-        return;
-      }
-      setStatus(`Imported “${data.quiz.name}”`);
-      setImportCode("");
-      await loadDashboard();
-    } catch {
-      setError("Import failed");
-    } finally {
-      setImporting(false);
-    }
+    const code = importCode.trim().toUpperCase();
+    if (code.length < 6) return;
+    router.push(`/share-quiz/${encodeURIComponent(code)}`);
   }
 
   async function signOut() {
@@ -240,9 +219,9 @@ export default function DashboardPage() {
           </Card>
 
           <Card className="flex flex-col gap-3">
-            <h2 className="text-card-title m-0">Import a template</h2>
+            <h2 className="text-card-title m-0">Import a quiz</h2>
             <p className="text-body-sm m-0 text-ink-muted">
-              Paste a quiz sharing code to clone it into your account.
+              Paste a quiz sharing code to preview and clone it into your account.
             </p>
             <form onSubmit={onImport} className="mt-1 flex flex-wrap gap-2">
               <Input
@@ -257,9 +236,9 @@ export default function DashboardPage() {
               <Button
                 type="submit"
                 variant="secondary"
-                disabled={importing || importCode.trim().length < 6}
+                disabled={importCode.trim().length < 6}
               >
-                {importing ? "…" : "Import"}
+                Import
               </Button>
             </form>
           </Card>
@@ -277,7 +256,7 @@ export default function DashboardPage() {
         <section id="quizzes" className="grid scroll-mt-20 gap-4">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h2 className="text-headline m-0">Your quiz templates</h2>
+              <h2 className="text-headline m-0">Your quizzes</h2>
               <p className="text-body-sm mt-1 mb-0 text-ink-muted">
                 Quizzes you’ve created — start a waiting room anytime.
               </p>
@@ -294,7 +273,7 @@ export default function DashboardPage() {
             <p className="text-body-sm m-0 text-ink-muted">Loading…</p>
           ) : quizzes.length === 0 ? (
             <EmptyState
-              title="No templates yet"
+              title="No quizzes yet"
               description="Create your first quiz or import a sharing code above."
               action={
                 <Link
@@ -309,7 +288,25 @@ export default function DashboardPage() {
             <ul className="m-0 grid list-none gap-3 p-0">
               {quizzes.slice(0, 6).map((quiz) => (
                 <li key={quiz.id}>
-                  <Card padding="md" className="flex flex-wrap items-center justify-between gap-4">
+                  <Card
+                    padding="md"
+                    className="flex cursor-pointer flex-wrap items-center justify-between gap-4 transition-colors hover:border-ink"
+                    role="link"
+                    tabIndex={0}
+                    onClick={() =>
+                      router.push(
+                        `/quizzes?open=${encodeURIComponent(quiz.id)}`,
+                      )
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        router.push(
+                          `/quizzes?open=${encodeURIComponent(quiz.id)}`,
+                        );
+                      }
+                    }}
+                  >
                     <div className="min-w-0 flex-1">
                       <strong className="text-subhead font-medium">{quiz.name}</strong>
                       {quiz.description && (
@@ -319,15 +316,7 @@ export default function DashboardPage() {
                       )}
                       <p className="text-caption mt-1 mb-0 text-ink-muted">
                         {quiz._count.questions} questions · {quiz._count.sessions}{" "}
-                        sessions · share{" "}
-                        <code className="text-mono">{quiz.quizSharingCode}</code>
-                        {" · "}
-                        <Link
-                          href={`/share-quiz/${quiz.quizSharingCode}`}
-                          className="font-medium text-ink"
-                        >
-                          share
-                        </Link>
+                        sessions
                       </p>
                     </div>
                     <Button
@@ -336,7 +325,10 @@ export default function DashboardPage() {
                       disabled={
                         startingId === quiz.id || quiz._count.questions === 0
                       }
-                      onClick={() => void startWaitingRoom(quiz.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void startWaitingRoom(quiz.id);
+                      }}
                       title={
                         quiz._count.questions === 0
                           ? "Add questions before starting"
@@ -373,7 +365,7 @@ export default function DashboardPage() {
           ) : conducted.length === 0 ? (
             <EmptyState
               title="No sessions hosted yet"
-              description="Start one from a template above when you’re ready to go live."
+              description="Start one from a quiz above when you’re ready to go live."
             />
           ) : (
             <ul className="m-0 grid list-none gap-3 p-0">

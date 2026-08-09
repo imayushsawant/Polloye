@@ -161,7 +161,6 @@ function QuizzesContent() {
 
   const [importOpen, setImportOpen] = useState(false);
   const [importCode, setImportCode] = useState("");
-  const [importing, setImporting] = useState(false);
   const [shareRevealedId, setShareRevealedId] = useState<string | null>(null);
   const [shareCopiedId, setShareCopiedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -314,30 +313,9 @@ function QuizzesContent() {
 
   async function importQuiz(e: FormEvent) {
     e.preventDefault();
-    setError("");
-    setStatus("");
-    setImporting(true);
-    try {
-      const code = importCode.trim().toUpperCase();
-      const res = await fetch(`/api/share-quiz/${encodeURIComponent(code)}`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Import failed");
-        setImporting(false);
-        return;
-      }
-      setStatus(`Imported “${data.quiz.name}”`);
-      setImportCode("");
-      setImportOpen(false);
-      await loadQuizzes();
-      setExpandedId(data.quiz.id);
-    } catch {
-      setError("Import failed");
-    } finally {
-      setImporting(false);
-    }
+    const code = importCode.trim().toUpperCase();
+    if (code.length < 6) return;
+    router.push(`/share-quiz/${encodeURIComponent(code)}`);
   }
 
   if (isPending || (loading && !session)) {
@@ -391,8 +369,8 @@ function QuizzesContent() {
               Import from sharing code
             </h2>
             <p className="text-body-sm m-0 text-ink-muted">
-              Paste another user’s 6-character quiz sharing code to clone it
-              into your account.
+              Paste another user’s 6-character quiz sharing code to open the
+              share page, rename, and clone it into your account.
             </p>
             <form onSubmit={importQuiz} className="flex flex-wrap gap-2">
               <Input
@@ -407,9 +385,9 @@ function QuizzesContent() {
               <Button
                 type="submit"
                 variant="primary"
-                disabled={importing || importCode.trim().length < 6}
+                disabled={importCode.trim().length < 6}
               >
-                {importing ? "Importing…" : "Import"}
+                Continue
               </Button>
               <Button
                 type="button"
