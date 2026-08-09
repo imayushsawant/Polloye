@@ -4,20 +4,19 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { Button, cx } from "@/components/ui";
+import { cx } from "@/components/ui";
 
 type Props = {
   children?: ReactNode;
-  onTour?: () => void;
   onSignOut?: () => void;
 };
 
 const LINKS = [
-  { href: "/create-quiz", label: "Create quiz" },
-  { href: "/dashboard#join", label: "Join quiz" },
+  { href: "/create-quiz", label: "Create Quiz" },
+  { href: "/dashboard#join", label: "Join Quiz" },
   { href: "/quizzes", label: "Quizzes" },
-  { href: "/conducted-quizzes", label: "Conducted quizzes" },
-  { href: "/participated-quizzes", label: "Participated quizzes" },
+  { href: "/conducted-quizzes", label: "Conducted Quiz" },
+  { href: "/participated-quizzes", label: "Participated Quiz" },
 ] as const;
 
 function linkActive(pathname: string, href: string) {
@@ -25,7 +24,7 @@ function linkActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AppNav({ children, onTour, onSignOut }: Props) {
+export function AppNav({ children, onSignOut }: Props) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -52,131 +51,116 @@ export function AppNav({ children, onTour, onSignOut }: Props) {
   }
 
   return (
-    <header className="sticky top-0 z-20 border-b border-hairline bg-canvas">
-      <div className="flex min-h-14 items-center gap-4 px-4 md:gap-6 md:px-6">
-        <Link
-          href="/dashboard"
-          className="shrink-0 text-[18px] font-medium tracking-[-0.3px] text-ink no-underline"
-        >
-          Polloye
-        </Link>
-
-        <nav
-          className="hidden flex-1 flex-wrap items-center gap-5 md:flex"
-          aria-label="Main"
-        >
-          {LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cx(
-                "text-body-sm font-medium no-underline transition-colors",
-                linkActive(pathname, link.href)
-                  ? "text-sage"
-                  : "text-ink hover:text-ink-muted",
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="ml-auto flex items-center gap-2">
-          {children}
-          {onTour && (
-            <Button
-              type="button"
-              variant="tertiary"
-              size="sm"
-              className="hidden sm:inline-flex"
-              onClick={onTour}
-            >
-              Tour
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="tertiary"
-            size="sm"
-            className="hidden md:inline-flex"
-            onClick={handleSignOut}
-          >
-            Sign out
-          </Button>
-
-          <button
-            type="button"
-            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-hairline bg-surface-1 text-ink md:hidden"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen}
-            aria-controls="app-nav-mobile"
-            onClick={() => setMenuOpen((o) => !o)}
-          >
-            {menuOpen ? (
-              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden fill="none">
-                <path
-                  d="M4 4l10 10M14 4L4 14"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden fill="none">
-                <path
-                  d="M3 5h12M3 9h12M3 13h12"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {menuOpen && (
+    <header className="sticky top-0 z-20 bg-transparent">
+      <div className="relative flex min-h-[52px] items-start justify-center px-4 pt-0 md:px-6">
         <div
-          id="app-nav-mobile"
-          className="border-t border-hairline bg-canvas px-4 py-4 md:hidden"
+          className={cx(
+            "notch-nav relative z-10 flex flex-col",
+            menuOpen ? "notch-nav-open" : "notch-nav-collapsed",
+          )}
         >
-          <nav className="flex flex-col gap-1" aria-label="Mobile">
-            {LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cx(
-                  "rounded-md px-3 py-3 text-body-sm font-medium no-underline",
-                  linkActive(pathname, link.href)
-                    ? "bg-surface-2 text-sage"
-                    : "text-ink hover:bg-surface-2",
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-            {onTour && (
+          <div className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5 md:px-6 md:py-3.5">
+            <Link
+              href="/dashboard"
+              className="shrink-0 text-[17px] font-normal tracking-[-0.35px] text-canvas no-underline sm:text-[18px]"
+            >
+              Polloye
+            </Link>
+
+            <nav
+              className="ml-2 hidden items-center gap-1 lg:flex lg:gap-1.5 xl:gap-2"
+              aria-label="Main"
+            >
+              {LINKS.map((link) => {
+                const active = linkActive(pathname, link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cx(
+                      "notch-link relative whitespace-nowrap px-2.5 py-1 text-[13px] font-medium no-underline xl:text-[14px]",
+                      active
+                        ? "notch-link-active rounded-full bg-canvas text-ink"
+                        : "text-ink",
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="ml-auto flex items-center gap-2 lg:hidden">
+              {children}
               <button
                 type="button"
-                className="rounded-md px-3 py-3 text-left text-body-sm font-medium text-ink-muted hover:bg-surface-2"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onTour();
-                }}
+                className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-md text-ink/80 hover:bg-ink/10 hover:text-ink"
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+                aria-controls="app-nav-mobile"
+                onClick={() => setMenuOpen((o) => !o)}
               >
-                Tour
+                {menuOpen ? (
+                  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden fill="none">
+                    <path
+                      d="M4 4l10 10M14 4L4 14"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden fill="none">
+                    <path
+                      d="M3 5h12M3 9h12M3 13h12"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                )}
               </button>
-            )}
-            <button
-              type="button"
-              className="rounded-md px-3 py-3 text-left text-body-sm font-medium text-ink-muted hover:bg-surface-2"
-              onClick={handleSignOut}
-            >
-              Sign out
-            </button>
-          </nav>
+            </div>
+
+            {children && <div className="ml-auto hidden lg:block">{children}</div>}
+          </div>
+
+          {/* Mobile panel — height animates inside the notch */}
+          <div
+            id="app-nav-mobile"
+            className="notch-nav-panel lg:hidden"
+            aria-hidden={!menuOpen}
+          >
+            <div className="notch-nav-panel-inner">
+              <nav className="flex flex-col gap-1 px-3 pb-4" aria-label="Mobile">
+                {LINKS.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    tabIndex={menuOpen ? 0 : -1}
+                    className={cx(
+                      "rounded-full px-3 py-2.5 text-body-sm font-medium no-underline",
+                      linkActive(pathname, link.href)
+                        ? "bg-canvas text-ink"
+                        : "text-ink hover:bg-ink/10",
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </div>
         </div>
-      )}
+
+        <button
+          type="button"
+          className="absolute top-3.5 right-3 z-20 inline-flex items-center justify-center rounded-full border border-ink/15 bg-surface-1 px-3.5 py-1.5 text-[13px] font-semibold text-ink shadow-sm transition-colors hover:bg-surface-2 sm:right-5 md:right-6"
+          onClick={handleSignOut}
+        >
+          Sign out
+        </button>
+      </div>
     </header>
   );
 }

@@ -165,7 +165,7 @@ export default function DashboardPage() {
     <div style={appShellVars}>
       <OnboardingWalkthrough open={tourOpen} onClose={() => setTourOpen(false)} />
 
-      <AppNav onTour={() => setTourOpen(true)} onSignOut={() => void signOut()} />
+      <AppNav onSignOut={() => void signOut()} />
 
       <main className="mx-auto grid max-w-[1100px] gap-12 px-6 pb-24 pt-12">
         <section className="grid max-w-xl gap-3">

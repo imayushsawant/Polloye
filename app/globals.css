@@ -223,3 +223,131 @@ body {
     letter-spacing: -0.6px;
   }
 }
+
+/* iPhone-style top notch nav — sage pill with flush concave ear curves */
+.notch-nav {
+  --notch: var(--sage);
+  --notch-ear: 16px;
+  background: var(--notch);
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
+  overflow: visible;
+  width: fit-content;
+  max-width: calc(100% - 6.75rem);
+  transition:
+    max-width 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Mobile: compact closed, expands nearly full-width when open */
+@media (max-width: 1023px) {
+  .notch-nav-collapsed {
+    width: fit-content;
+    max-width: 10.75rem;
+  }
+
+  .notch-nav-open {
+    width: calc(100% - 6.75rem);
+    max-width: calc(100% - 6.75rem);
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+  }
+}
+
+/* Desktop: only as wide as brand + links */
+@media (min-width: 1024px) {
+  .notch-nav-collapsed,
+  .notch-nav-open {
+    width: fit-content;
+    max-width: calc(100% - 11rem);
+  }
+}
+
+.notch-nav::before,
+.notch-nav::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: var(--notch-ear);
+  height: var(--notch-ear);
+  pointer-events: none;
+}
+
+/* Left ear — fills flush to the top edge */
+.notch-nav::before {
+  left: calc(var(--notch-ear) * -1 + 0.5px);
+  background: radial-gradient(
+    circle at 0 100%,
+    transparent calc(var(--notch-ear) - 0.5px),
+    var(--notch) var(--notch-ear)
+  );
+}
+
+/* Right ear — fills flush to the top edge */
+.notch-nav::after {
+  right: calc(var(--notch-ear) * -1 + 0.5px);
+  background: radial-gradient(
+    circle at 100% 100%,
+    transparent calc(var(--notch-ear) - 0.5px),
+    var(--notch) var(--notch-ear)
+  );
+}
+
+/* Mobile expand panel — grid 0fr→1fr for smooth height */
+.notch-nav-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.notch-nav-open .notch-nav-panel {
+  grid-template-rows: 1fr;
+}
+
+.notch-nav-panel-inner {
+  overflow: hidden;
+  min-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 240ms ease 40ms,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.notch-nav-open .notch-nav-panel-inner {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 280ms ease 90ms,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1) 60ms;
+}
+
+@media (min-width: 1024px) {
+  .notch-nav-panel {
+    display: none;
+  }
+}
+
+/* Notch link: white underline draws left → right on hover */
+.notch-link::after {
+  content: "";
+  position: absolute;
+  left: 0.4rem;
+  right: 0.4rem;
+  bottom: 0.1rem;
+  height: 1px;
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 220ms ease;
+  pointer-events: none;
+}
+
+.notch-link:not(.notch-link-active):hover::after {
+  transform: scaleX(1);
+}
+
+.notch-link-active::after {
+  display: none;
+}
