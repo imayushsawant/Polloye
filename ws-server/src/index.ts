@@ -111,6 +111,17 @@ const httpServer = createServer(async (req, res) => {
           sessionCode: session.sessionCode,
           participantId: body.participantId,
         });
+      } else {
+        const existing = session.participants.get(body.participantId)!;
+        existing.name = body.participantName;
+        if (typeof body.totalScore === "number") {
+          existing.totalScore = body.totalScore;
+        }
+        logger.info("participant_name_updated_memory", {
+          sessionId: session.sessionId,
+          sessionCode: session.sessionCode,
+          participantId: body.participantId,
+        });
       }
 
       res.writeHead(201, { "Content-Type": "application/json" });

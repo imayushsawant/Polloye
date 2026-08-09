@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:lan": "next dev -H 0.0.0.0 -p 3000",
     "dev:ws": "npm run dev --prefix ws-server",
     "dev:all": "npm run dev:ws & npm run dev",
     "build": "next build",

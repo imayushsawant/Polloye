@@ -1,9 +1,20 @@
 "use client";
 
-import { type FormEvent, use, useEffect, useState } from "react";
+import {
+  type FormEvent,
+  use,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 import { Button, Card, Input } from "@/components/ui";
-import { saveParticipantSession } from "@/lib/ws-client";
+import {
+  loadParticipantSession,
+  saveParticipantSession,
+} from "@/lib/ws-client";
 
 function IconCopy({ className }: { className?: string }) {
   return (
@@ -50,6 +61,12 @@ type QuizInfo = {
   hostName: string;
 };
 
+function displayNameFromAccount(name: string | undefined | null): string {
+  const trimmed = (name ?? "").trim();
+  if (!trimmed) return "Player";
+  return trimmed.slice(0, 32);
+}
+
 export default function JoinQuizPage({
   params,
 }: {
@@ -58,8 +75,10 @@ export default function JoinQuizPage({
   const { sessionCode: rawCode } = use(params);
   const sessionCode = rawCode.toUpperCase();
   const router = useRouter();
+  const { data: authSession, isPending: authPending } = authClient.useSession();
 
   const [nickname, setNickname] = useState("");
+  const [participantId, setParticipantId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [joined, setJoined] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -67,6 +86,62 @@ export default function JoinQuizPage({
   const [participantCount, setParticipantCount] = useState(0);
   const [quiz, setQuiz] = useState<QuizInfo | null>(null);
   const [copied, setCopied] = useState(false);
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [nicknameDraft, setNicknameDraft] = useState("");
+  const [savingNickname, setSavingNickname] = useState(false);
+
+  const autoJoinAttempted = useRef(false);
+
+  useEffect(() => {
+    const saved = loadParticipantSession(sessionCode);
+    if (saved) {
+      setJoined(true);
+      setNickname(saved.participantName);
+      setParticipantId(saved.participantId);
+    }
+  }, [sessionCode]);
+
+  const joinWithName = useCallback(
+    async (name: string) => {
+      const trimmed = name.trim().slice(0, 32);
+      if (!trimmed) {
+        setError("Nickname is required");
+        return;
+      }
+
+      setError("");
+      setJoining(true);
+      try {
+        const res = await fetch(`/api/session/${sessionCode}/join`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ participantName: trimmed }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error ?? "Join failed");
+          setJoining(false);
+          return;
+        }
+        saveParticipantSession(sessionCode, {
+          token: data.token,
+          participantId: data.participant.id,
+          participantName: data.participant.participantName,
+        });
+        setNickname(data.participant.participantName);
+        setParticipantId(data.participant.id);
+        setJoined(true);
+        setJoining(false);
+        if (data.session.state === "ACTIVE") {
+          router.replace(`/quiz/${sessionCode}`);
+        }
+      } catch {
+        setError("Join failed");
+        setJoining(false);
+      }
+    },
+    [router, sessionCode],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +186,23 @@ export default function JoinQuizPage({
     };
   }, [sessionCode, joined, router]);
 
+  // Logged-in users: skip nickname form and join with account name.
+  useEffect(() => {
+    if (authPending || joined || joining || autoJoinAttempted.current) return;
+    if (!authSession?.user) return;
+    if (sessionState === null || sessionState === "FINISHED") return;
+
+    autoJoinAttempted.current = true;
+    void joinWithName(displayNameFromAccount(authSession.user.name));
+  }, [
+    authPending,
+    authSession?.user,
+    joined,
+    joining,
+    sessionState,
+    joinWithName,
+  ]);
+
   async function copyJoinLink() {
     const url = `${window.location.origin}/join-quiz/${sessionCode}`;
     try {
@@ -124,18 +216,47 @@ export default function JoinQuizPage({
 
   async function onJoin(e: FormEvent) {
     e.preventDefault();
+    await joinWithName(nickname);
+  }
+
+  function startEditNickname() {
+    setNicknameDraft(nickname);
+    setEditingNickname(true);
     setError("");
-    setJoining(true);
+  }
+
+  function cancelEditNickname() {
+    setEditingNickname(false);
+    setNicknameDraft("");
+  }
+
+  async function saveNickname() {
+    if (!participantId) return;
+    const next = nicknameDraft.trim().slice(0, 32);
+    if (!next) {
+      setError("Nickname is required");
+      return;
+    }
+    if (next === nickname) {
+      setEditingNickname(false);
+      return;
+    }
+
+    setSavingNickname(true);
+    setError("");
     try {
-      const res = await fetch(`/api/session/${sessionCode}/join`, {
-        method: "POST",
+      const res = await fetch(`/api/session/${sessionCode}/nickname`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ participantName: nickname }),
+        body: JSON.stringify({
+          participantId,
+          participantName: next,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Join failed");
-        setJoining(false);
+        setError(data.error ?? "Could not update nickname");
+        setSavingNickname(false);
         return;
       }
       saveParticipantSession(sessionCode, {
@@ -143,16 +264,18 @@ export default function JoinQuizPage({
         participantId: data.participant.id,
         participantName: data.participant.participantName,
       });
-      setJoined(true);
-      setJoining(false);
-      if (data.session.state === "ACTIVE") {
-        router.replace(`/quiz/${sessionCode}`);
-      }
+      setNickname(data.participant.participantName);
+      setEditingNickname(false);
+      setSavingNickname(false);
     } catch {
-      setError("Join failed");
-      setJoining(false);
+      setError("Could not update nickname");
+      setSavingNickname(false);
     }
   }
+
+  const isLoggedIn = Boolean(authSession?.user);
+  const showGuestJoinForm =
+    !joined && !isLoggedIn && !authPending && sessionState !== "FINISHED";
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-canvas px-5 py-12">
@@ -191,11 +314,59 @@ export default function JoinQuizPage({
           {joined ? (
             <div className="flex flex-col gap-5">
               <div className="flex flex-col gap-2 text-center">
-                <p className="text-card-title m-0">You're in the lobby</p>
+                <p className="text-card-title m-0">You&apos;re in the lobby</p>
                 <p className="text-body-sm m-0 text-ink-muted">
                   Waiting for the host to begin…
                 </p>
               </div>
+
+              {!editingNickname ? (
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <p className="text-body-sm m-0 text-ink">
+                    Playing as{" "}
+                    <span className="font-medium">{nickname}</span>
+                  </p>
+                  <button
+                    type="button"
+                    className="text-caption min-h-8 rounded-md px-2 font-medium text-ink-muted underline-offset-2 transition-colors hover:text-ink hover:underline"
+                    onClick={startEditNickname}
+                  >
+                    Change nickname
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <Input
+                    label="Nickname"
+                    value={nicknameDraft}
+                    onChange={(e) => setNicknameDraft(e.target.value)}
+                    maxLength={32}
+                    required
+                    autoComplete="nickname"
+                    autoFocus
+                    disabled={savingNickname}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="accent"
+                      disabled={savingNickname || !nicknameDraft.trim()}
+                      onClick={() => void saveNickname()}
+                    >
+                      {savingNickname ? "Saving…" : "Save"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={savingNickname}
+                      onClick={cancelEditNickname}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <button
                 type="button"
                 className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-hairline bg-surface-1 text-ink transition-colors hover:bg-surface-2"
@@ -209,7 +380,7 @@ export default function JoinQuizPage({
                 </span>
               </button>
             </div>
-          ) : (
+          ) : showGuestJoinForm ? (
             <form onSubmit={onJoin} className="flex flex-col gap-5">
               <Input
                 label="Nickname"
@@ -230,6 +401,38 @@ export default function JoinQuizPage({
                 {joining ? "Joining…" : "Join"}
               </Button>
             </form>
+          ) : sessionState === "FINISHED" ? (
+            <p className="text-body m-0 text-center text-ink-muted">
+              This session has finished.
+            </p>
+          ) : isLoggedIn ? (
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-body m-0 text-center text-ink-muted">
+                {joining
+                  ? `Joining as ${displayNameFromAccount(authSession?.user?.name)}…`
+                  : `Join as ${displayNameFromAccount(authSession?.user?.name)}`}
+              </p>
+              {!joining && error ? (
+                <Button
+                  type="button"
+                  variant="accent"
+                  onClick={() => {
+                    autoJoinAttempted.current = false;
+                    setError("");
+                    autoJoinAttempted.current = true;
+                    void joinWithName(
+                      displayNameFromAccount(authSession?.user?.name),
+                    );
+                  }}
+                >
+                  Try again
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-body m-0 text-center text-ink-muted">
+              {authPending ? "Checking account…" : "Loading…"}
+            </p>
           )}
 
           {error && (

@@ -321,13 +321,16 @@ export function registerParticipantInMemory(
   name: string,
   totalScore = 0,
 ) {
-  if (!session.participants.has(participantId)) {
-    session.participants.set(participantId, {
-      name,
-      totalScore,
-      joinedAt: Date.now(),
-    });
+  const existing = session.participants.get(participantId);
+  if (existing) {
+    existing.name = name;
+    return;
   }
+  session.participants.set(participantId, {
+    name,
+    totalScore,
+    joinedAt: Date.now(),
+  });
 }
 
 export function attachSocketHandlers(io: Server, socket: Socket) {
