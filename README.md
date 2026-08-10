@@ -2,9 +2,11 @@
 
 **Live quiz platform — create, host, and join real-time quizzes.**
 
+🔗 **Live Deployment:** [https://polloye.ayushsawant.dev](https://polloye.ayushsawant.dev)
+
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/imayushsawant/Polloye/actions)
 [![Version](https://img.shields.io/badge/version-0.1.0-blue)](https://github.com/imayushsawant/Polloye)
-[![License](https://img.shields.io/badge/license-private-lightgrey)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
 ---
 
@@ -110,6 +112,33 @@ npm run db:migrate
 ```
 
 You’re ready to run the app.
+
+---
+
+## Deployment (VPS / Production)
+
+Polloye is designed to be easily deployed on a Linux Virtual Private Server (VPS) such as an Azure Linux VM. The live instance runs at [https://polloye.ayushsawant.dev](https://polloye.ayushsawant.dev).
+
+### Production Architecture
+- **Database**: PostgreSQL running in an isolated Docker container.
+- **Process Manager**: PM2 running both the Next.js frontend (port `3000`) and the WebSocket server (port `3001`).
+- **Reverse Proxy**: Caddy server handling automatic SSL and routing HTTPS traffic.
+  - `/socket.io/*` routes to `127.0.0.1:3001`
+  - Everything else routes to `127.0.0.1:3000`
+- **Media Storage**: Cloudflare R2 bucket securely holding all user-uploaded question and option images.
+
+### Quick Deployment Steps
+1. SSH into your VPS and install dependencies (Node.js, Docker, PM2, Caddy, Git).
+2. Clone the repository and configure both `.env` files (root and `ws-server`).
+3. Run `sudo docker compose up -d` for the DB, then run Prisma migrations (`npx prisma migrate deploy`).
+4. Build the application (`npm run build`).
+5. Start processes using PM2:
+   ```bash
+   pm2 start npm --name "polloye-web" -- start
+   cd ws-server && pm2 start npm --name "polloye-ws" -- start
+   ```
+6. Point your domain A-record to your VPS IP.
+7. Configure Caddy (`/etc/caddy/Caddyfile`) with your domain to handle SSL and proxying, then restart Caddy.
 
 ---
 
@@ -230,6 +259,4 @@ For bugs, include steps to reproduce, expected vs actual behavior, and relevant 
 
 ## License
 
-This repository is marked **private** (`"private": true` in `package.json`) and does not currently ship a public open-source license file. All rights reserved unless the maintainers publish a `LICENSE`.
-
-If you open-source the project later, add a `LICENSE` file (for example MIT) and update the badge above.
+This project is open source and available under the [MIT License](./LICENSE).
