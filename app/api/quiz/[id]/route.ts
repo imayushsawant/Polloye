@@ -5,6 +5,7 @@ import {
   requireSession,
 } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
+import { deleteQuizImages } from "@/lib/r2";
 import { updateQuizSchema } from "@/lib/validations/quiz";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -72,5 +73,9 @@ export async function DELETE(request: Request, context: RouteContext) {
   if (ownership.error) return ownership.error;
 
   await prisma.quiz.delete({ where: { id } });
+
+  // Delete all associated images from R2 (failures are logged but won't prevent quiz deletion)
+  await deleteQuizImages(id);
+
   return jsonOk({ success: true });
 }

@@ -1,4 +1,9 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  PutObjectCommand,
+  S3Client,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
@@ -125,4 +130,54 @@ export async function putObject(params: {
       Body: params.body,
     }),
   );
+}
+
+/**
+ * Deletes all images associated with a quiz (questions and options) from R2.
+ */
+export async function deleteQuizImages(quizId: string): Promise<void> {
+  try {
+    const bucket = requireEnv("R2_BUCKET_NAME");
+    const client = getR2Client();
+    const prefix = `quizzes/${quizId}/`;
+
+    let isTruncated = true;
+    let continuationToken: string | undefined = undefined;
+
+    while (isTruncated) {
+      const listCommand: any = new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      });
+
+      const listResult = (await client.send(listCommand)) as any;
+
+      if (!listResult.Contents || listResult.Contents.length === 0) {
+        break; // No more files to delete
+      }
+
+      const keysToDelete = listResult.Contents.map((item: any) => ({
+        Key: item.Key,
+      })).filter((item: any) => item.Key !== undefined) as { Key: string }[];
+
+      if (keysToDelete.length > 0) {
+        const deleteCommand: any = new DeleteObjectsCommand({
+          Bucket: bucket,
+          Delete: {
+            Objects: keysToDelete,
+            Quiet: true,
+          },
+        });
+        await client.send(deleteCommand);
+      }
+
+      isTruncated = listResult.IsTruncated ?? false;
+      continuationToken = listResult.NextContinuationToken;
+    }
+  } catch (error) {
+    // We log the error but don't throw it, so that if R2 is not configured,
+    // or if the deletion fails, it doesn't break the quiz deletion process.
+    console.error(`Failed to delete images from R2 for quiz ${quizId}:`, error);
+  }
 }
