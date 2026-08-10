@@ -1,12 +1,22 @@
-# Polloye
+<p align="center">
+  <img src="./public/polloye-logo-white.svg" alt="Polloye" width="320" />
+</p>
 
-**Live quiz platform — create, host, and join real-time quizzes.**
+<h1 align="center">Polloye</h1>
 
-🔗 **Live Deployment:** [https://polloye.ayushsawant.dev](https://polloye.ayushsawant.dev)
+<p align="center">
+  <strong>Live quiz platform — create, host, and join real-time quizzes.</strong>
+</p>
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/imayushsawant/Polloye/actions)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](https://github.com/imayushsawant/Polloye)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+<p align="center">
+  🔗 <strong>Live:</strong> <a href="https://polloye.ayushsawant.dev">polloye.ayushsawant.dev</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/imayushsawant/Polloye/actions"><img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build Status" /></a>
+  <a href="https://github.com/imayushsawant/Polloye"><img src="https://img.shields.io/badge/version-0.1.0-blue" alt="Version" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT" /></a>
+</p>
 
 ---
 
