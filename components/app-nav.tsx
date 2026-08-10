@@ -72,14 +72,14 @@ export function AppNav({ children, onSignOut }: Props) {
           <div className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5 md:px-6 md:py-3.5">
             <Link
               href="/dashboard"
-              className="shrink-0 text-canvas no-underline"
+              className="shrink-0 text-ink no-underline"
               aria-label="Polloye home"
             >
               <PolloyeLogo className="h-[31px] sm:h-[34px]" />
             </Link>
 
             <nav
-              className="ml-2 hidden items-center gap-1 lg:flex lg:gap-1.5 xl:gap-2"
+              className="ml-2 hidden items-center gap-0.5 lg:flex lg:gap-1"
               aria-label="Main"
             >
               {LINKS.map((link) => {
@@ -91,10 +91,10 @@ export function AppNav({ children, onSignOut }: Props) {
                     href={link.href}
                     onClick={isJoin ? handleJoinQuizClick : undefined}
                     className={cx(
-                      "notch-link relative whitespace-nowrap px-2.5 py-1 text-[13px] font-medium no-underline xl:text-[14px]",
+                      "notch-link relative whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] font-medium no-underline transition-all duration-200 xl:text-[14px]",
                       active
-                        ? "notch-link-active rounded-full bg-canvas text-ink"
-                        : "text-ink",
+                        ? "notch-link-active bg-canvas/95 text-ink"
+                        : "text-on-primary/85 hover:text-on-primary",
                     )}
                   >
                     {link.label}
@@ -107,7 +107,7 @@ export function AppNav({ children, onSignOut }: Props) {
               {children}
               <button
                 type="button"
-                className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-md text-ink/80 hover:bg-ink/10 hover:text-ink"
+                className="inline-flex min-h-9 min-w-9 cursor-pointer items-center justify-center rounded-full text-on-primary/80 transition-colors hover:bg-on-primary/10 hover:text-on-primary"
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={menuOpen}
                 aria-controls="app-nav-mobile"
@@ -145,7 +145,7 @@ export function AppNav({ children, onSignOut }: Props) {
             aria-hidden={!menuOpen}
           >
             <div className="notch-nav-panel-inner">
-              <nav className="flex flex-col gap-1 px-3 pb-4" aria-label="Mobile">
+              <nav className="flex flex-col gap-0.5 px-3 pb-4" aria-label="Mobile">
                 {LINKS.map((link) => {
                   const isJoin = link.href === "/dashboard#join";
                   return (
@@ -155,10 +155,10 @@ export function AppNav({ children, onSignOut }: Props) {
                       tabIndex={menuOpen ? 0 : -1}
                       onClick={isJoin ? handleJoinQuizClick : undefined}
                       className={cx(
-                        "rounded-full px-3 py-2.5 text-body-sm font-medium no-underline",
+                        "rounded-full px-3 py-2.5 text-body-sm font-medium no-underline transition-colors",
                         linkActive(pathname, link.href)
-                          ? "bg-canvas text-ink"
-                          : "text-ink hover:bg-ink/10",
+                          ? "bg-canvas/95 text-ink"
+                          : "text-on-primary/85 hover:bg-on-primary/10 hover:text-on-primary",
                       )}
                     >
                       {link.label}
@@ -172,7 +172,7 @@ export function AppNav({ children, onSignOut }: Props) {
 
         <button
           type="button"
-          className="absolute top-3.5 right-3 z-20 inline-flex items-center justify-center rounded-full border border-ink/15 bg-surface-1 px-3.5 py-1.5 text-[13px] font-semibold text-ink shadow-sm transition-colors hover:bg-surface-2 sm:right-5 md:right-6"
+          className="absolute top-3 right-3 z-20 inline-flex cursor-pointer items-center justify-center rounded-full border border-on-primary/15 bg-surface-1 px-3.5 py-1.5 text-[13px] font-medium text-ink transition-all duration-200 hover:bg-surface-2 sm:right-5 md:right-6"
           onClick={handleSignOut}
         >
           Sign out

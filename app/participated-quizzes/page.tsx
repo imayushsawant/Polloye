@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -23,7 +23,7 @@ type ParticipatedRow = {
 const linkBtn =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-[18px] py-2.5 text-button no-underline transition-colors select-none";
 
-export default function ParticipatedQuizzesPage() {
+function ParticipatedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, isPending } = authClient.useSession();
@@ -173,5 +173,22 @@ export default function ParticipatedQuizzesPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function ParticipatedQuizzesPage() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          style={appShellVars}
+          className="flex items-center justify-center p-8"
+        >
+          <p className="text-body m-0 text-ink-muted">Loading…</p>
+        </main>
+      }
+    >
+      <ParticipatedContent />
+    </Suspense>
   );
 }

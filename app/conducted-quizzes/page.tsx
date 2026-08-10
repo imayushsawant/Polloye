@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -109,7 +109,7 @@ function LeaderboardList({ rows }: { rows: LeaderboardRow[] }) {
   );
 }
 
-export default function ConductedQuizzesPage() {
+function ConductedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, isPending } = authClient.useSession();
@@ -439,5 +439,22 @@ export default function ConductedQuizzesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ConductedQuizzesPage() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          style={appShellVars}
+          className="flex items-center justify-center p-8"
+        >
+          <p className="text-body m-0 text-ink-muted">Loading…</p>
+        </main>
+      }
+    >
+      <ConductedContent />
+    </Suspense>
   );
 }

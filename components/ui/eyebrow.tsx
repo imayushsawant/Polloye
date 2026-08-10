@@ -11,7 +11,7 @@ type Props = HTMLAttributes<HTMLParagraphElement> & {
  * Section eyebrow — sentence case, 14px / 500. Never all-caps.
  */
 export function Eyebrow({
-  tone = "muted",
+  tone = "sage",
   className,
   children,
   ...rest
