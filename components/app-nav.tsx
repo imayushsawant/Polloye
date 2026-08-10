@@ -61,7 +61,7 @@ export function AppNav({ children, onSignOut }: Props) {
   }
 
   return (
-    <header className="sticky top-0 z-20 bg-transparent">
+    <header className="nav-backdrop sticky top-0 z-20">
       <div className="relative flex min-h-[52px] items-start justify-center px-4 pt-0 md:px-6">
         <div
           className={cx(

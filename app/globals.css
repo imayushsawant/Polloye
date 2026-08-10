@@ -360,6 +360,23 @@ body {
   display: none;
 }
 
+/* Sticky nav backdrop — solid canvas top with a soft gradient fade-out at bottom */
+.nav-backdrop {
+  background: linear-gradient(
+    to bottom,
+    var(--canvas) 60%,
+    color-mix(in srgb, var(--canvas) 80%, transparent) 80%,
+    transparent 100%
+  );
+  padding-bottom: 16px;
+  pointer-events: none;
+}
+
+/* Re-enable pointer events on the actual nav content */
+.nav-backdrop > * {
+  pointer-events: auto;
+}
+
 /* Dashboard entrance animations */
 @keyframes fadeInUp {
   from {
