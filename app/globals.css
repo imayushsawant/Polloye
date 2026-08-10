@@ -359,3 +359,67 @@ body {
 .notch-link-active::after {
   display: none;
 }
+
+/* Dashboard entrance animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dash-animate {
+  opacity: 0;
+  animation: fadeInUp 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.dash-animate-scale {
+  opacity: 0;
+  animation: scaleIn 450ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.dash-delay-1 { animation-delay: 60ms; }
+.dash-delay-2 { animation-delay: 120ms; }
+.dash-delay-3 { animation-delay: 180ms; }
+.dash-delay-4 { animation-delay: 280ms; }
+.dash-delay-5 { animation-delay: 380ms; }
+.dash-delay-6 { animation-delay: 480ms; }
+
+/* Action card hover lift — white-on-cream depth shift, no shadows per DESIGN.md */
+.action-card {
+  transition:
+    border-color 220ms ease,
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.action-card:hover {
+  border-color: var(--ink-tertiary);
+  transform: translateY(-2px);
+}
+
+/* Panel list item hover */
+.panel-row {
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.panel-row:hover {
+  border-color: var(--ink-tertiary);
+  background-color: var(--surface-2);
+}

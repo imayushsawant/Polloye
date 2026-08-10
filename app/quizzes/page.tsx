@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  type FormEvent,
   Suspense,
   useCallback,
   useEffect,
@@ -16,7 +15,6 @@ import {
   Card,
   EmptyState,
   Eyebrow,
-  Input,
   cx,
 } from "@/components/ui";
 
@@ -311,13 +309,6 @@ function QuizzesContent() {
     }
   }
 
-  async function importQuiz(e: FormEvent) {
-    e.preventDefault();
-    const code = importCode.trim().toUpperCase();
-    if (code.length < 6) return;
-    router.push(`/share-quiz/${encodeURIComponent(code)}`);
-  }
-
   if (isPending || (loading && !session)) {
     return (
       <main style={appShellVars} className="flex items-center justify-center p-8">
@@ -347,13 +338,12 @@ function QuizzesContent() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setImportOpen((o) => !o)}
+            <Link
+              href="/import-quiz"
+              className={`${linkBtn} border border-hairline bg-surface-1 text-ink hover:bg-surface-2`}
             >
               Import quiz
-            </Button>
+            </Link>
             <Link
               href="/create-quiz"
               className={`${linkBtn} bg-sage text-on-primary hover:opacity-90`}
@@ -362,43 +352,6 @@ function QuizzesContent() {
             </Link>
           </div>
         </header>
-
-        {importOpen && (
-          <Card className="grid gap-3">
-            <h2 className="text-subhead m-0 font-medium">
-              Import from sharing code
-            </h2>
-            <p className="text-body-sm m-0 text-ink-muted">
-              Paste another user’s 6-character quiz sharing code to open the
-              share page, rename, and clone it into your account.
-            </p>
-            <form onSubmit={importQuiz} className="flex flex-wrap gap-2">
-              <Input
-                value={importCode}
-                onChange={(e) => setImportCode(e.target.value.toUpperCase())}
-                placeholder="e.g. AB12CD"
-                maxLength={6}
-                required
-                aria-label="Quiz sharing code"
-                className="min-w-[140px] flex-1"
-              />
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={importCode.trim().length < 6}
-              >
-                Continue
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setImportOpen(false)}
-              >
-                Cancel
-              </Button>
-            </form>
-          </Card>
-        )}
 
         {error && (
           <p className="text-body-sm m-0 text-semantic-error" role="alert">

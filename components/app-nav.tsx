@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
+import { type CSSProperties, type MouseEvent, type ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -51,6 +51,15 @@ export function AppNav({ children, onSignOut }: Props) {
     void (onSignOut ? onSignOut() : defaultSignOut());
   }
 
+  function handleJoinQuizClick(e: MouseEvent<HTMLAnchorElement>) {
+    if (pathname === "/dashboard") {
+      e.preventDefault();
+      window.location.hash = "join";
+      window.dispatchEvent(new Event("polloye:open-join"));
+      setMenuOpen(false);
+    }
+  }
+
   return (
     <header className="sticky top-0 z-20 bg-transparent">
       <div className="relative flex min-h-[52px] items-start justify-center px-4 pt-0 md:px-6">
@@ -75,10 +84,12 @@ export function AppNav({ children, onSignOut }: Props) {
             >
               {LINKS.map((link) => {
                 const active = linkActive(pathname, link.href);
+                const isJoin = link.href === "/dashboard#join";
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
+                    onClick={isJoin ? handleJoinQuizClick : undefined}
                     className={cx(
                       "notch-link relative whitespace-nowrap px-2.5 py-1 text-[13px] font-medium no-underline xl:text-[14px]",
                       active
@@ -135,21 +146,25 @@ export function AppNav({ children, onSignOut }: Props) {
           >
             <div className="notch-nav-panel-inner">
               <nav className="flex flex-col gap-1 px-3 pb-4" aria-label="Mobile">
-                {LINKS.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    tabIndex={menuOpen ? 0 : -1}
-                    className={cx(
-                      "rounded-full px-3 py-2.5 text-body-sm font-medium no-underline",
-                      linkActive(pathname, link.href)
-                        ? "bg-canvas text-ink"
-                        : "text-ink hover:bg-ink/10",
-                    )}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+                {LINKS.map((link) => {
+                  const isJoin = link.href === "/dashboard#join";
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      tabIndex={menuOpen ? 0 : -1}
+                      onClick={isJoin ? handleJoinQuizClick : undefined}
+                      className={cx(
+                        "rounded-full px-3 py-2.5 text-body-sm font-medium no-underline",
+                        linkActive(pathname, link.href)
+                          ? "bg-canvas text-ink"
+                          : "text-ink hover:bg-ink/10",
+                      )}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
               </nav>
             </div>
           </div>
