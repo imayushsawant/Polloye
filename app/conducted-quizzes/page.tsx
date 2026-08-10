@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { AppNav, appShellVars } from "@/components/app-nav";
 import { Button, Card, EmptyState, Eyebrow } from "@/components/ui";
@@ -111,6 +111,7 @@ function LeaderboardList({ rows }: { rows: LeaderboardRow[] }) {
 
 export default function ConductedQuizzesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, isPending } = authClient.useSession();
 
   const [rows, setRows] = useState<ConductedRow[]>([]);
@@ -149,6 +150,19 @@ export default function ConductedQuizzesPage() {
     }
     void load();
   }, [isPending, session, router, load]);
+
+  /* Auto-open a session when navigated with ?open=<id> */
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (loading || autoOpened.current) return;
+    const openId = searchParams.get("open");
+    if (!openId) return;
+    const match = rows.find((r) => r.id === openId);
+    if (match) {
+      openSession(match);
+      autoOpened.current = true;
+    }
+  }, [loading, rows, searchParams]);
 
   useEffect(() => {
     if (!selected) return;

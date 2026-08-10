@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { AppNav, appShellVars } from "@/components/app-nav";
 import { Badge, Card, EmptyState, Eyebrow } from "@/components/ui";
@@ -25,6 +25,7 @@ const linkBtn =
 
 export default function ParticipatedQuizzesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, isPending } = authClient.useSession();
 
   const [rows, setRows] = useState<ParticipatedRow[]>([]);
@@ -57,6 +58,21 @@ export default function ParticipatedQuizzesPage() {
     }
     void load();
   }, [isPending, session, router, load]);
+
+  /* Auto-scroll + highlight when navigated with ?highlight=<id> */
+  const highlighted = useRef(false);
+  useEffect(() => {
+    if (loading || highlighted.current) return;
+    const hId = searchParams.get("highlight");
+    if (!hId) return;
+    const el = document.getElementById(`participated-${hId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-sage");
+      highlighted.current = true;
+      window.setTimeout(() => el.classList.remove("ring-2", "ring-sage"), 2500);
+    }
+  }, [loading, rows, searchParams]);
 
   if (isPending || (loading && !session)) {
     return (
@@ -111,7 +127,7 @@ export default function ParticipatedQuizzesPage() {
         ) : (
           <ul className="m-0 grid list-none gap-3 p-0">
             {rows.map((p) => (
-              <li key={p.id}>
+              <li key={p.id} id={`participated-${p.id}`}>
                 <Card
                   padding="md"
                   className="flex flex-wrap items-center justify-between gap-4"
