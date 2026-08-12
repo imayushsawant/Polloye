@@ -12,11 +12,8 @@ export function calculatePoints(params: {
   const duration = question.duration;
   if (duration <= 0) return 0;
 
-  const elapsed = Math.max(0, elapsedMs);
-  return Math.max(
-    0,
-    Math.floor((question.score * (duration - elapsed)) / duration),
-  );
+  const elapsed = Math.max(0, Math.min(elapsedMs, duration));
+  return Math.round((1 - ((elapsed / duration) / 2)) * question.score);
 }
 
 export function isAnswerCorrect(

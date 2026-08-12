@@ -1446,6 +1446,18 @@ export default function CreateQuizPage() {
                                     ),
                                   };
                                 }
+                                if (
+                                  nextNature === "WRONG" &&
+                                  c.question.questionType === "MSQ"
+                                ) {
+                                  const otherCorrect = c.options.some(
+                                    (opt, i) =>
+                                      i !== optionIndex &&
+                                      opt.optionNature === "CORRECT",
+                                  );
+                                  if (!otherCorrect) return c;
+                                }
+
                                 return {
                                   ...c,
                                   options: c.options.map((opt, i) =>
