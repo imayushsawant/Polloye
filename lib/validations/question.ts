@@ -8,13 +8,13 @@ export const SCORE_OPTIONS: ReadonlyArray<{
   value: ScoreValue;
   label: string;
 }> = [
-  { value: 0, label: "0 (no points / feedback)" },
-  { value: 1000, label: "1000" },
-  { value: 2000, label: "2000" },
-  { value: 3000, label: "3000" },
-  { value: 4000, label: "4000" },
-  { value: 5000, label: "5000" },
-];
+    { value: 0, label: "0 (no points / feedback)" },
+    { value: 1000, label: "1000" },
+    { value: 2000, label: "2000" },
+    { value: 3000, label: "3000" },
+    { value: 4000, label: "4000" },
+    { value: 5000, label: "5000" },
+  ];
 
 /** Allowed question timers (ms): 30s, 45s, 1m, 2m, 3m, 5m */
 export const DURATION_VALUES_MS = [
@@ -32,13 +32,13 @@ export const DURATION_OPTIONS: ReadonlyArray<{
   value: DurationMs;
   label: string;
 }> = [
-  { value: 30_000, label: "30 sec" },
-  { value: 45_000, label: "45 sec" },
-  { value: 60_000, label: "1 min" },
-  { value: 120_000, label: "2 min" },
-  { value: 180_000, label: "3 min" },
-  { value: 300_000, label: "5 min" },
-];
+    { value: 30_000, label: "30 sec" },
+    { value: 45_000, label: "45 sec" },
+    { value: 60_000, label: "1 min" },
+    { value: 120_000, label: "2 min" },
+    { value: 180_000, label: "3 min" },
+    { value: 300_000, label: "5 min" },
+  ];
 
 const questionTypeSchema = z.enum(["MCQ", "MSQ", "TRUE_FALSE"]);
 const analyticsTypeSchema = z.enum(["BARCHART", "PIE_CHART", "DONUT_CHART"]);

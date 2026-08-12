@@ -23,7 +23,11 @@ export default function LoginPage() {
       password,
     });
     if (signInError) {
-      setError(signInError.message ?? "Sign in failed");
+      let errorMessage = signInError.message ?? "Sign in failed";
+      if (errorMessage.includes("[body.")) {
+        errorMessage = errorMessage.replace(/\[body\.[^\]]+\]\s*/g, "").trim();
+      }
+      setError(errorMessage);
       setSubmitting(false);
       return;
     }

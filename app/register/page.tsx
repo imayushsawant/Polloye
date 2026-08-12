@@ -18,6 +18,13 @@ export default function RegisterPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
+
+    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      setError("Password must contain at least 8 characters, including one uppercase letter, one lowercase letter, and one number.");
+      return;
+    }
+
     setSubmitting(true);
     const { error: signUpError } = await authClient.signUp.email({
       email,
@@ -25,7 +32,11 @@ export default function RegisterPage() {
       name,
     });
     if (signUpError) {
-      setError(signUpError.message ?? "Sign up failed");
+      let errorMessage = signUpError.message ?? "Sign up failed";
+      if (errorMessage.includes("[body.")) {
+        errorMessage = errorMessage.replace(/\[body\.[^\]]+\]\s*/g, "").trim();
+      }
+      setError(errorMessage);
       setSubmitting(false);
       return;
     }
@@ -80,8 +91,9 @@ export default function RegisterPage() {
             }}
             autoComplete="new-password"
             minLength={8}
+            pattern="^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$"
             required
-            hint="At least 8 characters"
+            hint="At least 8 chars, 1 uppercase, 1 lowercase, 1 number"
           />
           {error && (
             <p className="text-body-sm m-0 text-semantic-error" role="alert">
