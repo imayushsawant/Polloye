@@ -141,11 +141,11 @@ export const questionWithOptionsSchema = z
     if (question.questionType !== "TRUE_FALSE") {
       options.forEach((option, index) => {
         const description = option.optionDescription.trim();
-        if (!hasImage(option.optImgLink) && description.length < 10) {
+        if (!hasImage(option.optImgLink) && description.length < 1) {
           ctx.addIssue({
             code: "custom",
             message:
-              "Option description must be at least 10 characters when no image is present",
+              "Option description must be at least 1 character when no image is present",
             path: ["options", index, "optionDescription"],
           });
         }
