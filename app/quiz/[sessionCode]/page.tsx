@@ -258,7 +258,7 @@ export default function QuizPlayPage({
       {question && phase === "question_active" && !waitingForNextQuestion && (
         <section className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-5 px-5 pb-24 pt-4 md:max-w-[1400px] md:min-h-0 md:gap-8 md:px-8 md:pt-4">
           <div className="flex flex-1 flex-col gap-5 md:grid md:min-h-0 md:flex-1 md:grid-cols-2 md:gap-10">
-            <div className="flex flex-col gap-2 md:min-h-0 md:gap-4">
+            <div className="flex flex-col gap-2 md:min-h-0 md:justify-center md:gap-4">
               <p className="text-mono m-0 text-ink-subtle">
                 {question.question_type} · {question.score} pts
               </p>
@@ -314,16 +314,16 @@ export default function QuizPlayPage({
       {phase === "answer_revealed" &&
         !showRevealPopup &&
         !waitingForNextQuestion && (
-        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-4 px-6 pb-24 text-center">
-          <Eyebrow>Answer revealed</Eyebrow>
-          <h2 className="text-headline m-0">Waiting for host…</h2>
-          <p className="text-body-sm m-0 text-ink-muted">
-            {attainedScore != null
-              ? `You scored ${attainedScore} this round`
-              : "Hang tight for the next step"}
-          </p>
-        </div>
-      )}
+          <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-4 px-6 pb-24 text-center">
+            <Eyebrow>Answer revealed</Eyebrow>
+            <h2 className="text-headline m-0">Waiting for host…</h2>
+            <p className="text-body-sm m-0 text-ink-muted">
+              {attainedScore != null
+                ? `You scored ${attainedScore} this round`
+                : "Hang tight for the next step"}
+            </p>
+          </div>
+        )}
 
       {phase === "leaderboard" && (
         <section className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-5 px-5 pb-24 pt-4">

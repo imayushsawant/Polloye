@@ -237,7 +237,7 @@ export default function LiveHostPage({
                 <OptionGrid
                   options={question.options}
                   selectedIds={[]}
-                  onToggle={() => {}}
+                  onToggle={() => { }}
                   disabled
                   correctIds={correctIds}
                   showCorrect={showRevealMarking}
