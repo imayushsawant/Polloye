@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -12,7 +12,15 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reset") === "success") {
+      setSuccessMsg("Password reset successfully. You can now log in.");
+    }
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -53,6 +61,14 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {successMsg && (
+          <div className="mb-6 rounded-md bg-semantic-success-muted p-3">
+            <p className="text-body-sm m-0 text-semantic-success">
+              {successMsg}
+            </p>
+          </div>
+        )}
+
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <Input
             label="Email"
@@ -65,18 +81,28 @@ export default function LoginPage() {
             autoComplete="email"
             required
           />
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              if (error) setError("");
-            }}
-            autoComplete="current-password"
-            minLength={8}
-            required
-          />
+          <div className="flex flex-col gap-1">
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError("");
+              }}
+              autoComplete="current-password"
+              minLength={8}
+              required
+            />
+            <div className="flex justify-end">
+              <Link 
+                href="/forgot-password" 
+                className="text-body-sm text-ink-muted hover:text-ink hover:underline underline-offset-2"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          </div>
           {error && (
             <p className="text-body-sm m-0 text-semantic-error" role="alert">
               {error}
