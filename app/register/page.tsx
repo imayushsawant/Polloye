@@ -41,6 +41,13 @@ export default function RegisterPage() {
       setSubmitting(false);
       return;
     }
+
+    // Explicitly sign in to ensure the session is created and the client state is updated
+    await authClient.signIn.email({
+      email,
+      password,
+    });
+
     router.push("/dashboard");
   }
 
