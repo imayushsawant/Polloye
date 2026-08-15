@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { Button, Card, Input } from "@/components/ui";
 import { appShellVars } from "@/components/app-nav";
+import { PolloyeLogo } from "@/components/polloye-logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export default function LoginPage() {
             href="/login"
             className="text-card-title text-ink no-underline tracking-[-0.3px]"
           >
-            Polloye
+            <PolloyeLogo />
           </Link>
           <h1 className="text-headline m-0 text-ink">Sign in</h1>
           <p className="text-body-sm m-0 text-ink-muted">
