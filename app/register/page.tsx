@@ -127,6 +127,7 @@ export default function RegisterPage() {
             await authClient.signIn.social({
               provider: "google",
               callbackURL: "/dashboard",
+              errorCallbackURL: "/auth-error",
             });
           }}
         >

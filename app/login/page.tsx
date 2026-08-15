@@ -143,6 +143,7 @@ export default function LoginPage() {
             await authClient.signIn.social({
               provider: "google",
               callbackURL: "/dashboard",
+              errorCallbackURL: "/auth-error",
             });
           }}
         >
