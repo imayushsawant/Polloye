@@ -11,6 +11,7 @@ import {
   OptionGrid,
   RevealPopup,
   StatusBar,
+  QuestionTimer,
   type LeaderboardRow,
   type PublicQuestion,
 } from "@/components/live";
@@ -259,8 +260,11 @@ export default function QuizPlayPage({
         <section className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-5 px-5 pb-24 pt-4 md:max-w-[1400px] md:min-h-0 md:gap-8 md:px-8 md:pt-4">
           <div className="flex flex-1 flex-col gap-5 md:grid md:min-h-0 md:flex-1 md:grid-cols-2 md:gap-10">
             <div className="flex flex-col gap-2 md:min-h-0 md:justify-center md:gap-4">
-              <p className="text-mono m-0 text-ink-subtle">
-                {question.question_type} · {question.score} pts
+              <p className="flex items-center gap-2 m-0">
+                <span className="text-mono text-ink-subtle">
+                  {question.question_type} · {question.score} pts
+                </span>
+                <QuestionTimer durationMs={question.duration} shownAt={question.shown_at} />
               </p>
               <h1 className="text-card-title m-0 sm:text-headline md:text-display-md">
                 {question.question_desc}

@@ -278,7 +278,7 @@ export async function showNextQuestion(io: Server, session: LiveSession) {
   });
   io.to(roomName(session.sessionCode)).emit(
     "question:reveal",
-    publicQuestionPayload(question),
+    publicQuestionPayload(question, session.questionShownAt),
   );
 
   if (session.hostConnected) {
@@ -642,7 +642,7 @@ function snapshotState(session: LiveSession, forParticipantId?: string) {
       question &&
       session.phase === "question_active" &&
       !blockedFromCurrent
-        ? publicQuestionPayload(question)
+        ? publicQuestionPayload(question, session.questionShownAt)
         : null,
     blocked_from_current_question: blockedFromCurrent,
     leaderboard:

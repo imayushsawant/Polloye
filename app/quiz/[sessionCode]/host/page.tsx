@@ -8,6 +8,7 @@ import {
   LobbyWaiting,
   OptionAnalytics,
   OptionGrid,
+  QuestionTimer,
   type LeaderboardRow,
   type PublicQuestion,
 } from "@/components/live";
@@ -217,8 +218,13 @@ export default function LiveHostPage({
           (phase === "question_active" || phase === "answer_revealed") && (
             <section className="flex flex-1 flex-col gap-8 md:grid md:grid-cols-2 md:items-start md:gap-10">
               <div className="flex flex-col gap-3">
-                <p className="text-mono m-0 text-ink-subtle">
-                  {question.question_type} · {question.score} pts
+                <p className="flex items-center gap-2 m-0">
+                  <span className="text-mono text-ink-subtle">
+                    {question.question_type} · {question.score} pts
+                  </span>
+                  {phase === "question_active" && (
+                    <QuestionTimer durationMs={question.duration} shownAt={question.shown_at} />
+                  )}
                 </p>
                 <h1 className="text-headline m-0 sm:text-display-md">
                   {question.question_desc}

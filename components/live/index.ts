@@ -6,5 +6,6 @@ export { RevealPopup } from "./reveal-popup";
 export { StatusBar } from "./status-bar";
 export { OptionAnalytics } from "./option-analytics";
 export { TallyBars } from "./tally-bars";
+export { QuestionTimer } from "./question-timer";
 export type { AnalyticsType } from "./option-analytics";
 export type { LeaderboardRow, PublicOption, PublicQuestion } from "./types";

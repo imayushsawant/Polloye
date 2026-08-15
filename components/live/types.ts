@@ -13,6 +13,7 @@ export type PublicQuestion = {
   analytics_type?: string;
   score: number;
   duration: number;
+  shown_at?: number | null;
   options: PublicOption[];
 };
 

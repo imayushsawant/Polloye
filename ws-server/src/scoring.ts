@@ -44,7 +44,7 @@ export function buildOptionCounts(
   return counts;
 }
 
-export function publicQuestionPayload(question: LiveQuestion) {
+export function publicQuestionPayload(question: LiveQuestion, shownAt?: number | null) {
   return {
     question_id: question.id,
     question_desc: question.questionDescription,
@@ -53,6 +53,7 @@ export function publicQuestionPayload(question: LiveQuestion) {
     analytics_type: question.analyticsType,
     question_type: question.questionType,
     duration: question.duration,
+    shown_at: shownAt ?? null,
     position: question.position,
     options: question.options.map((o) => ({
       option_id: o.id,
