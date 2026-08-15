@@ -24,12 +24,7 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
   },
-  account: {
-    accountLinking: {
-      enabled: true,
-      trustedProviders: ["google"],
-    },
-  },
+
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: [
@@ -37,18 +32,4 @@ export const auth = betterAuth({
     "http://localhost:3000",
     "http://127.0.0.1:3000",
   ].filter((origin): origin is string => Boolean(origin)),
-  databaseHooks: {
-    user: {
-      create: {
-        before: async (user) => {
-          return {
-            data: {
-              ...user,
-              emailVerified: true,
-            },
-          };
-        },
-      },
-    },
-  },
 });

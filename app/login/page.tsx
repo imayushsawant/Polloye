@@ -21,6 +21,18 @@ export default function LoginPage() {
     if (params.get("reset") === "success") {
       setSuccessMsg("Password reset successfully. You can now log in.");
     }
+    
+    const err = params.get("error");
+    if (err) {
+      if (err === "account_not_linked" || err === "email_in_use" || err === "unable_to_link_account") {
+        setError("An account with this email already exists. Please log in with your password.");
+      } else {
+        setError("Authentication failed. Please try again.");
+      }
+      // Remove the error from the URL so it doesn't persist on refresh
+      const newUrl = window.location.pathname;
+      window.history.replaceState(null, "", newUrl);
+    }
   }, []);
 
   async function onSubmit(e: FormEvent) {
