@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button, Card } from "@/components/ui";
 import { appShellVars } from "@/components/app-nav";
 import { PolloyeLogo } from "@/components/polloye-logo";
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const searchParams = useSearchParams();
   const [errorMessage, setErrorMessage] = useState("An authentication error occurred.");
 
@@ -23,6 +23,16 @@ export default function AuthErrorPage() {
     }
   }, [searchParams]);
 
+  return (
+    <div className="mb-8 rounded-md bg-semantic-error/10 p-4 border border-semantic-error/20">
+      <p className="text-body-sm m-0 text-semantic-error font-medium">
+        {errorMessage}
+      </p>
+    </div>
+  );
+}
+
+export default function AuthErrorPage() {
   return (
     <main
       style={appShellVars}
@@ -42,11 +52,15 @@ export default function AuthErrorPage() {
           </p>
         </div>
 
-        <div className="mb-8 rounded-md bg-semantic-error/10 p-4 border border-semantic-error/20">
-          <p className="text-body-sm m-0 text-semantic-error font-medium">
-            {errorMessage}
-          </p>
-        </div>
+        <Suspense fallback={
+          <div className="mb-8 rounded-md bg-semantic-error/10 p-4 border border-semantic-error/20">
+            <p className="text-body-sm m-0 text-semantic-error font-medium">
+              Loading error details...
+            </p>
+          </div>
+        }>
+          <AuthErrorContent />
+        </Suspense>
 
         <Link href="/login" className="no-underline w-full block">
           <Button type="button" variant="primary" className="w-full">
