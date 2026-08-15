@@ -37,4 +37,18 @@ export const auth = betterAuth({
     "http://localhost:3000",
     "http://127.0.0.1:3000",
   ].filter((origin): origin is string => Boolean(origin)),
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          return {
+            data: {
+              ...user,
+              emailVerified: true,
+            },
+          };
+        },
+      },
+    },
+  },
 });
