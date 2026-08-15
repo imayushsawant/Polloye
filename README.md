@@ -20,50 +20,50 @@
 
 ---
 
-## Description
+## 📖 Description
 
 Polloye is a Kahoot-style live quiz platform for educators, event hosts, and teams who want fast, interactive sessions in the browser. Create quizzes with timed questions, share them with a short code, host a live session over WebSockets, and let participants join with an account or a nickname. After each round, hosts and players can review scores and response analytics.
 
 It solves the friction of spinning up engaging live polls without heavy desktop tools — everything runs as a modern web app with a separate realtime server for low-latency play.
 
-**Who it’s for:** teachers, facilitators, meetup organizers, and anyone running classroom or team quizzes.
+**Who it’s for:** Teachers, facilitators, meetup organizers, and anyone running classroom or team quizzes.
 
 ---
 
-## Key Features
+## ✨ Key Features
 
-- **Quiz builder** — Create quizzes with MCQ, multi-select (MSQ), and true/false questions, scoring, timers, and optional images
-- **Live hosting** — Start a session, share a 6-character session code, and control the flow from a host view
-- **Realtime play** — Socket.IO-powered participant joins, answers, and live tallies
-- **Guest & account play** — Join with a nickname as a guest, or sign in for history across sessions
-- **Share & import** — Share quizzes via a unique sharing code; others can clone into their library
-- **Results & analytics** — Session results with charts (bar, pie, donut) via Recharts
-- **Dashboard** — Your quizzes, conducted sessions, and participated history in one place
-- **Auth** — Email/password authentication with [Better Auth](https://www.better-auth.com/)
-- **Media uploads** — Question and option images via Cloudflare R2 (S3-compatible)
-- **Onboarding** — First-run walkthrough for new hosts
-- **LAN-friendly dev** — Optional same-Wi-Fi setup so phones can join a laptop-hosted session
+- **Quiz Builder** — Create quizzes with MCQ, multi-select (MSQ), and true/false questions. Includes customizable scoring and optional images.
+- **Per-Question Timers** — Granular control over the time limit for every individual question.
+- **Live Hosting & Realtime Play** — Socket.IO-powered low-latency gameplay. Start a session, share a 6-character code, and control the flow from a host view.
+- **Flexible Authentication** — Email/password & OAuth (Google/GitHub) support via [Better Auth](https://www.better-auth.com/), complete with a secure "Forgot Password" flow.
+- **Guest & Account Play** — Join with a nickname as a guest, or sign in for history across sessions.
+- **Results & Analytics** — Review session results with rich charts (bar, pie, donut) via Recharts. Includes **Attendance Time-Window Analytics** to track player participation.
+- **Daily Notes** — Built-in daily notes feature for organizers and users.
+- **Share & Import** — Share quizzes via a unique sharing code; others can clone into their library.
+- **Dashboard** — Your quizzes, conducted sessions, and participated history in one place.
+- **Media Uploads** — Question and option images powered by Cloudflare R2 (S3-compatible).
+- **LAN-friendly Dev** — Optional same-Wi-Fi setup so phones can join a laptop-hosted session during development.
 
 ---
 
-## Tech Stack
+## 🛠 Tech Stack
 
 | Layer | Technology |
 | --- | --- |
-| Framework | [Next.js](https://nextjs.org/) 16 (App Router) |
-| Language | TypeScript |
-| UI | React 19, Tailwind CSS 4 |
-| Auth | Better Auth |
-| Database | PostgreSQL 16, Prisma ORM |
-| Realtime | Socket.IO (`ws-server/`) |
-| Validation | Zod |
-| Charts | Recharts |
-| Object storage | Cloudflare R2 (`@aws-sdk/client-s3`) |
-| Local DB | Docker Compose |
+| **Framework** | [Next.js](https://nextjs.org/) 16 (App Router) |
+| **Language** | TypeScript |
+| **UI** | React 19, Tailwind CSS 4 |
+| **Auth** | Better Auth, Resend (Emails) |
+| **Database** | PostgreSQL 16, Prisma ORM |
+| **Realtime** | Socket.IO (`ws-server/`) |
+| **Validation** | Zod |
+| **Charts** | Recharts |
+| **Object Storage** | Cloudflare R2 (`@aws-sdk/client-s3`) |
+| **Local DB** | Docker Compose |
 
 ---
 
-## Prerequisites & Installation
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -94,7 +94,7 @@ npm run db:up
 
 This starts Postgres on `localhost:5432` with user/password/db `polloye` (see `docker-compose.yml`).
 
-### 4. Configure environment variables
+### 4. Configure Environment Variables
 
 Copy the example env file and fill in secrets:
 
@@ -112,57 +112,32 @@ CORS_ORIGIN=http://localhost:3000
 WS_PORT=3001
 ```
 
-Use the **same** `WS_JWT_SECRET` and `WS_INTERNAL_SECRET` values in the root `.env`. See [Configuration](#configuration) for the full variable list.
+> **Note:** Use the **same** `WS_JWT_SECRET` and `WS_INTERNAL_SECRET` values in the root `.env`. See [Configuration](#configuration) for the full variable list.
 
-### 5. Generate Prisma client and run migrations
+### 5. Database Setup
+
+Generate Prisma client and run migrations:
 
 ```bash
 npm run db:generate
 npm run db:migrate
 ```
 
-You’re ready to run the app.
+You’re ready to run the app!
 
 ---
 
-## Deployment (VPS / Production)
+## 💻 Usage
 
-Polloye is designed to be easily deployed on a Linux Virtual Private Server (VPS) such as an Azure Linux VM. The live instance runs at [https://polloye.ayushsawant.dev](https://polloye.ayushsawant.dev).
+### Local Development (Laptop only)
 
-### Production Architecture
-- **Database**: PostgreSQL running in an isolated Docker container.
-- **Process Manager**: PM2 running both the Next.js frontend (port `3000`) and the WebSocket server (port `3001`).
-- **Reverse Proxy**: Caddy server handling automatic SSL and routing HTTPS traffic.
-  - `/socket.io/*` routes to `127.0.0.1:3001`
-  - Everything else routes to `127.0.0.1:3000`
-- **Media Storage**: Cloudflare R2 bucket securely holding all user-uploaded question and option images.
-
-### Quick Deployment Steps
-1. SSH into your VPS and install dependencies (Node.js, Docker, PM2, Caddy, Git).
-2. Clone the repository and configure both `.env` files (root and `ws-server`).
-3. Run `sudo docker compose up -d` for the DB, then run Prisma migrations (`npx prisma migrate deploy`).
-4. Build the application (`npm run build`).
-5. Start processes using PM2:
-   ```bash
-   pm2 start npm --name "polloye-web" -- start
-   cd ws-server && pm2 start npm --name "polloye-ws" -- start
-   ```
-6. Point your domain A-record to your VPS IP.
-7. Configure Caddy (`/etc/caddy/Caddyfile`) with your domain to handle SSL and proxying, then restart Caddy.
-
----
-
-## Usage
-
-### Development (laptop only)
-
-Start the Next.js app and the WebSocket server in two terminals:
+Start the Next.js app and the WebSocket server in two separate terminals:
 
 ```bash
+# Terminal 1: Next.js Frontend
 npm run dev
-```
 
-```bash
+# Terminal 2: WebSocket Server
 npm run dev:ws
 ```
 
@@ -175,24 +150,21 @@ Then open [http://localhost:3000](http://localhost:3000).
 5. Host advances questions; players answer in realtime
 6. View results when the session ends
 
-### Development (phone + laptop on the same Wi‑Fi)
+### Development (Phone + Laptop on the same Wi‑Fi)
 
-1. Find your laptop’s LAN IPv4 (`ipconfig` on Windows)
+1. Find your laptop’s LAN IPv4 (e.g., `ipconfig` on Windows, `ifconfig` on Mac/Linux)
 2. Point `BETTER_AUTH_URL` and `NEXT_PUBLIC_WS_URL` at that IP (see comments in `.env.example`)
 3. Set `ws-server/.env` `CORS_ORIGIN` to the same origin
 4. Run:
 
 ```bash
 npm run dev:lan
-```
-
-```bash
 npm run dev:ws
 ```
 
-Open `http://<your-lan-ip>:3000` on phone and laptop (HTTP, not HTTPS). Ensure Windows Firewall allows TCP **3000** and **3001**.
+Open `http://<your-lan-ip>:3000` on your phone and laptop (HTTP, not HTTPS). Ensure your firewall allows TCP **3000** and **3001**.
 
-### Production-style local run
+### Production-style Local Run
 
 ```bash
 npm run build
@@ -201,43 +173,41 @@ npm run start
 
 Keep `npm run dev:ws` (or a process manager for `ws-server`) running alongside the Next.js server.
 
-### Useful scripts
-
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Next.js dev server |
-| `npm run dev:lan` | Next.js bound to `0.0.0.0:3000` for LAN access |
-| `npm run dev:ws` | WebSocket server (tsx watch) |
-| `npm run build` / `npm run start` | Production build & start |
-| `npm run lint` | ESLint |
-| `npm run db:up` / `npm run db:down` | Start/stop Postgres via Docker |
-| `npm run db:studio` | Prisma Studio |
-
 ---
 
-## Configuration
+## ⚙️ Configuration
 
-Environment variables are documented in [`.env.example`](./.env.example). Core ones:
+Environment variables are documented in [`.env.example`](./.env.example). Core ones include:
 
-| Variable | Where | Purpose |
+| Variable | Location | Purpose |
 | --- | --- | --- |
 | `BETTER_AUTH_SECRET` | Root `.env` | Auth signing secret |
-| `BETTER_AUTH_URL` | Root `.env` | Public app origin (e.g. `http://localhost:3000`) |
-| `DATABASE_URL` | Root + `ws-server` | PostgreSQL connection string |
-| `WS_JWT_SECRET` | Root + `ws-server` | JWT secret for Socket.IO auth (must match) |
-| `WS_INTERNAL_SECRET` | Root + `ws-server` | Secret for Next → WS internal calls (must match) |
-| `WS_SERVER_URL` | Root `.env` | Server-side URL to the WS process (usually `http://localhost:3001`) |
+| `BETTER_AUTH_URL` | Root `.env` | Public app origin (e.g., `http://localhost:3000`) |
+| `DATABASE_URL` | Root & `ws-server` | PostgreSQL connection string |
+| `WS_JWT_SECRET` | Root & `ws-server` | JWT secret for Socket.IO auth (must match) |
+| `WS_INTERNAL_SECRET` | Root & `ws-server` | Secret for Next → WS internal calls (must match) |
 | `NEXT_PUBLIC_WS_URL` | Root `.env` | Browser-facing WS URL |
-| `CRON_SECRET` | Root `.env` | Protects cron cleanup routes |
 | `R2_*` | Root `.env` | Cloudflare R2 credentials and public URL for media |
-| `CORS_ORIGIN` | `ws-server/.env` | Allowed browser origin for Socket.IO |
-| `WS_PORT` | `ws-server/.env` | WS listen port (default `3001`) |
 
-**Do not commit** real secrets, production URLs, or LAN IPs.
+> ⚠️ **Security Warning:** Do not commit real secrets, production URLs, or LAN IPs.
 
 ---
 
-## Project structure (high level)
+## 🌍 Deployment (VPS / Production)
+
+Polloye is designed to be easily deployed on a Linux Virtual Private Server (VPS) such as an Azure Linux VM. The live instance runs at [https://polloye.ayushsawant.dev](https://polloye.ayushsawant.dev).
+
+### Production Architecture
+- **Database**: PostgreSQL running in an isolated Docker container.
+- **Process Manager**: PM2 running both the Next.js frontend (port `3000`) and the WebSocket server (port `3001`).
+- **Reverse Proxy**: Caddy server handling automatic SSL and routing HTTPS traffic.
+  - `/socket.io/*` routes to `127.0.0.1:3001`
+  - Everything else routes to `127.0.0.1:3000`
+- **Media Storage**: Cloudflare R2 bucket securely holding all user-uploaded question and option images.
+
+---
+
+## 📂 Project Structure
 
 ```text
 polloye/
@@ -252,9 +222,9 @@ polloye/
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
-Contributions are welcome. A practical flow:
+Contributions are welcome! A practical flow:
 
 1. Fork the repo (or create a branch if you have write access)
 2. Create a feature branch: `git checkout -b feature/your-change`
@@ -267,6 +237,6 @@ For bugs, include steps to reproduce, expected vs actual behavior, and relevant 
 
 ---
 
-## License
+## 📄 License
 
 This project is open source and available under the [MIT License](./LICENSE).
