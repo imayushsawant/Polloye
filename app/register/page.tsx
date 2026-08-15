@@ -42,13 +42,10 @@ export default function RegisterPage() {
       return;
     }
 
-    // Explicitly sign in to ensure the session is created and the client state is updated
-    await authClient.signIn.email({
-      email,
-      password,
-    });
-
-    router.push("/dashboard");
+    // Use window.location.href instead of router.push to force a full page reload.
+    // This bypasses any stale client-side session cache and ensures the dashboard
+    // correctly recognizes the new session cookie.
+    window.location.href = "/dashboard";
   }
 
   return (
