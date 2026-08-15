@@ -13,7 +13,8 @@ export function calculatePoints(params: {
   if (duration <= 0) return 0;
 
   const elapsed = Math.max(0, Math.min(elapsedMs, duration));
-  return Math.round((1 - ((elapsed / duration) / 2)) * question.score);
+  // Decays linearly from 100% (at 0ms) down to 10% (at the very last millisecond)
+  return Math.max(0, Math.floor(question.score * (0.1 + 0.9 * ((duration - elapsed) / duration))));
 }
 
 export function isAnswerCorrect(
