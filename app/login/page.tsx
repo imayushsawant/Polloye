@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState, useEffect } from "react";
+import { type FormEvent, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const redirectingRef = useRef(false);
+  const { data: session, isPending } = authClient.useSession();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -35,6 +37,13 @@ export default function LoginPage() {
     }
   }, []);
 
+  // Once the session is confirmed after a successful sign-in, navigate to dashboard.
+  useEffect(() => {
+    if (redirectingRef.current && !isPending && session) {
+      router.replace("/dashboard");
+    }
+  }, [isPending, session, router]);
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
@@ -52,7 +61,12 @@ export default function LoginPage() {
       setSubmitting(false);
       return;
     }
-    router.push("/dashboard");
+    // Mark that we're waiting for the session to propagate before redirecting.
+    // The useEffect watching `session` will do the actual navigation once
+    // better-auth's useSession() reflects the new cookie — this avoids the
+    // race condition where the dashboard reads a stale null session and
+    // immediately bounces the user back to login.
+    redirectingRef.current = true;
   }
 
   return (

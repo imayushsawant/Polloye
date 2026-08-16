@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -67,6 +67,10 @@ export default function DashboardPage() {
   const [startingId, setStartingId] = useState<string | null>(null);
   const [joinOpen, setJoinOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
+  // Track how many consecutive non-pending renders we've had without a session.
+  // This prevents a premature redirect when better-auth's useSession() briefly
+  // returns null after a fresh sign-in before the new cookie has propagated.
+  const noSessionCountRef = useRef(0);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -89,14 +93,24 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (isPending) return;
-    if (!session) {
-      router.replace("/login");
+    if (isPending) {
+      // Reset counter while loading — a pending state means auth is in-flight.
+      noSessionCountRef.current = 0;
       return;
     }
-    void loadDashboard();
-    if (shouldShowOnboarding()) {
-      setTourOpen(true);
+    if (session) {
+      noSessionCountRef.current = 0;
+      void loadDashboard();
+      if (shouldShowOnboarding()) {
+        setTourOpen(true);
+      }
+      return;
+    }
+    // No session: only redirect after two consecutive settled renders
+    // to give better-auth time to propagate a freshly-set cookie.
+    noSessionCountRef.current += 1;
+    if (noSessionCountRef.current >= 2) {
+      router.replace("/login");
     }
   }, [isPending, session, router, loadDashboard]);
 
